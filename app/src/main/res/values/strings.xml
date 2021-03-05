@@ -1,6 +1,16 @@
 <resources>
     <string name="app_name">Dynamic Metronome</string>
-    <string name="select_tempo">Select a tempo using the above or below method.</string>
+    <string name="select_tempo">Double tap the number picker above to type in a tempo.</string>
     <string name="play">Play</string>
     <string name="quarter_volume">Quarter note volume</string>
+    <string name="programs_button">Programs</string>
+    <string name="home_button">Home</string>
+    <string name="create_new_program">Create new program</string>
+    <string name="create_new_element">Create new element</string>
+    <string name="create_element_information">Fill in the following information then click \'Confirm\' to create a new program element.</string>
+    <string name="tempo">Tempo</string>
+    <string name="confirm">Confirm</string>
+    <string name="bar_number">Bar number</string>
+    <string name="create_program_information">Click \'Create new\' to add elements to the program. When you are finished click confirm to end the program.</string>
+    <string name="interpolate">Interpolate</string>
 </resources>

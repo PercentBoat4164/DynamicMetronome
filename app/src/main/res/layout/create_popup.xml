@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#808080">
+
+    <Button
+        android:id="@+id/ConfirmButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/Tempo"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginStart="0dp"
+        android:layout_marginTop="571dp"
+        android:layout_marginEnd="0dp"
+        android:text="@string/confirm" />
+
+    <com.google.android.material.textfield.TextInputEditText
+        android:id="@+id/Tempo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="47dp"
+        android:layout_marginEnd="0dp"
+        android:hint="@string/tempo"
+        android:inputType="number" />
+
+    <com.google.android.material.textfield.TextInputEditText
+        android:id="@+id/BarNumber"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="92dp"
+        android:layout_marginEnd="1dp"
+        android:hint="@string/bar_number"
+        android:inputType="number"/>
+
+    <TextView
+        android:id="@+id/InformationalText"
+        android:layout_width="272dp"
+        android:layout_height="47dp"
+        android:layout_alignBottom="@+id/Tempo"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="57dp"
+        android:layout_marginBottom="39dp"
+        android:text="@string/create_element_information" />
+
+    <CheckBox
+        android:id="@+id/Interpolate"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/BarNumber"
+        android:layout_marginTop="0dp"
+        android:text="@string/interpolate" />
+
+</RelativeLayout>

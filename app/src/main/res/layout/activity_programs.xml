@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottomNavigationView"
+        android:layout_width="411dp"
+        android:layout_height="654dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ViewStub
+            android:id="@+id/viewStub"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout="@android:layout/list_content" />
+
+    </com.google.android.material.bottomnavigation.BottomNavigationView>
+
+    <Button
+        android:id="@+id/HomeButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="232dp"
+        android:text="@string/home_button"
+        app:layout_constraintBottom_toBottomOf="@+id/NewProgramButton"
+        app:layout_constraintEnd_toStartOf="@+id/NewProgramButton"
+        app:layout_constraintTop_toTopOf="@+id/NewProgramButton"
+        app:layout_constraintVertical_bias="0.125" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/NewProgramButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="16dp"
+        android:clickable="true"
+        app:layout_constraintEnd_toEndOf="@+id/bottomNavigationView"
+        app:layout_constraintTop_toBottomOf="@+id/bottomNavigationView"
+        app:srcCompat="@android:drawable/ic_menu_add"
+        android:contentDescription="@string/create_new_program"
+        android:focusable="true" />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>
