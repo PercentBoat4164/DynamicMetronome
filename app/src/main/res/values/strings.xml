@@ -13,4 +13,7 @@
     <string name="bar_number">Bar number</string>
     <string name="create_program_information">Click \'Create new\' to add elements to the program. When you are finished click confirm to end the program.</string>
     <string name="interpolate">Interpolate</string>
+    <string name="program_play_button">Play the current program.</string>
+    <string name="cancel">Cancel</string>
+    <string name="program_name">Program name</string>
 </resources>

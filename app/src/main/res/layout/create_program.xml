@@ -8,47 +8,67 @@
 
     <com.jjoe64.graphview.GraphView
         android:id="@+id/graph"
-        android:layout_width="393dp"
+        android:layout_width="412dp"
         android:layout_height="198dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="4dp"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <ListView
-        android:id="@+id/ProgramElementsList"
-        android:layout_width="415dp"
-        android:layout_height="501dp"
-        android:layout_marginTop="8dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/graph"
-        app:layout_constraintVertical_bias="0.0" >
-    </ListView>
-
     <Button
-        android:id="@+id/NewElementButton"
+        android:id="@+id/CancelButton"
         android:layout_width="197dp"
         android:layout_height="39dp"
-        android:layout_marginTop="2dp"
-        android:text="@string/create_new_element"
+        android:text="@string/cancel"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/ProgramElementsList"
-        app:layout_constraintVertical_bias="1.0" />
+        app:layout_constraintStart_toStartOf="parent" />
 
     <Button
-        android:id="@+id/HomeButton"
+        android:id="@+id/ConfirmButton"
         android:layout_width="202dp"
         android:layout_height="39dp"
         android:text="@string/confirm"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toEndOf="@+id/CancelButton"
+        app:layout_constraintTop_toTopOf="@+id/CancelButton"
+        app:layout_constraintVertical_bias="0.0" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/ExecuteProgram"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="280dp"
+        android:clickable="true"
+        android:contentDescription="@string/program_play_button"
+        android:focusable="true"
+        app:layout_constraintBottom_toBottomOf="@+id/NewElementButton"
         app:layout_constraintStart_toEndOf="@+id/NewElementButton"
         app:layout_constraintTop_toTopOf="@+id/NewElementButton"
-        app:layout_constraintVertical_bias="0.0" />
+        app:srcCompat="@android:drawable/ic_media_play" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/NewElementButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="420dp"
+        android:clickable="true"
+        android:contentDescription="@string/create_new_element"
+        android:focusable="true"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/graph"
+        app:srcCompat="@android:drawable/ic_menu_add" />
+
+    <com.google.android.material.textfield.TextInputEditText
+        android:id="@+id/ProgramName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/program_name"
+        android:singleLine="true"
+        app:layout_constraintTop_toBottomOf="@+id/graph"
+        tools:layout_editor_absoluteX="1dp" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -6,16 +6,21 @@ import android.content.res.Resources
 import android.media.AudioAttributes
 import android.media.SoundPool
 import android.os.*
+import android.util.Log
 import android.view.Gravity
-import android.widget.CompoundButton
-import android.widget.NumberPicker
-import android.widget.PopupWindow
-import android.widget.SeekBar
+import android.view.View
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import com.jjoe64.graphview.series.DataPoint
 import com.jjoe64.graphview.series.LineGraphSeries
 import thadd.schelp.dynamicmetronome.databinding.*
+import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.FileNotFoundException
 import java.lang.IndexOutOfBoundsException
+import java.lang.NumberFormatException
+import java.util.zip.Deflater
+import java.util.zip.Inflater
 
 const val MIN_TEMPO = 20
 const val MAX_TEMPO = 300F
@@ -34,9 +39,12 @@ class MainActivity : AppCompatActivity() {
     private var metronome = Metronome(metronomeState)
     private lateinit var program: Program
     private lateinit var popup: PopupWindow
+    private var programs = mutableListOf<String>()
+    private lateinit var programsArrayAdapter: ArrayAdapter<String>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        programsArrayAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, programs)
         mainActivity = ActivityMainBinding.inflate(layoutInflater)
         programsActivity = ActivityProgramsBinding.inflate(layoutInflater)
         createProgramActivity = CreateProgramBinding.inflate(layoutInflater)
@@ -96,45 +104,96 @@ class MainActivity : AppCompatActivity() {
         programsActivity.HomeButton.setOnClickListener{ setContentView(mainActivity.root) }
 
         programsActivity.NewProgramButton.setOnClickListener{ setContentView(createProgramActivity.root) }
+
+        var i = 0
+        File(filesDir, "/").walk().forEach { if (i != 0) { programs.add(it.name) }; i++ }
+        programsActivity.ListView.adapter = programsArrayAdapter
+        programsActivity.ListView.setOnItemClickListener{
+            parent: AdapterView<*>, _: View, position: Int, _: Long ->
+            val selectedProgram = parent.getItemAtPosition(position)
+            program.load(selectedProgram.toString().dropLast(4))
+            setContentView(createProgramActivity.root)
+            createProgramActivity.ProgramName.setText(selectedProgram.toString().dropLast(4))
+            createPopup.BarNumber.setText("0")
+            createPopup.Tempo.setText(program.states[0]?.tempo.toString())
+            createPopup.Interpolate.isChecked = program.states[0]?.interpolate == true
+            createPopup.ConfirmButton.callOnClick()
+        }
     }
 
     private fun buildCreateProgramScreenGUI() {
-        createProgramActivity.graph.addSeries(LineGraphSeries(arrayOf(DataPoint(0.0, 100.0), DataPoint(5.0, 100.0), DataPoint(5.0, 150.0), DataPoint(10.0, 200.0))))
-        createProgramActivity.graph.canScrollHorizontally(5)
+        createProgramActivity.graph.viewport.isScrollable = true
+        createProgramActivity.graph.viewport.isScalable = true
 
         createProgramActivity.NewElementButton.setOnClickListener{
             popup = PopupWindow(createPopup.root, (Resources.getSystem().displayMetrics.widthPixels * .9).toInt(), (Resources.getSystem().displayMetrics.heightPixels * .9).toInt(), true)
             popup.showAtLocation(programsActivity.root, Gravity.CENTER, 0, 0)
-            //if (program.states.isEmpty()) { createPopup.BarNumber.setText("Bar Number = 0") }
         }
 
-        createProgramActivity.HomeButton.setOnClickListener{ setContentView(programsActivity.root) }
+        createProgramActivity.ConfirmButton.setOnClickListener{
+            program.save(createProgramActivity.ProgramName.text.toString())
+            createProgramActivity.graph.removeAllSeries()
+            createPopup.BarNumber.setText("")
+            createPopup.Tempo.setText("")
+            createPopup.Interpolate.isChecked = false
+            setContentView(programsActivity.root)
+            if (!programs.contains(createProgramActivity.ProgramName.text.toString() + ".met")) {
+                programs.add(createProgramActivity.ProgramName.text.toString() +".met")
+                programsArrayAdapter.notifyDataSetChanged()
+            }
+        }
+
+        createProgramActivity.ExecuteProgram.setOnClickListener{ program.compile().execute() }
+
+        createProgramActivity.CancelButton.setOnClickListener{
+            createProgramActivity.graph.removeAllSeries()
+            createPopup.BarNumber.setText("")
+            createPopup.Tempo.setText("")
+            createPopup.Interpolate.isChecked = false
+            program.states = mutableMapOf()
+            setContentView(programsActivity.root)
+        }
     }
 
     private fun buildPopupGUI() {
         createPopup.ConfirmButton.setOnClickListener{
-            createProgramActivity.graph.removeAllSeries()
-            if (program.states.isEmpty()) {
-                program.addOrChangeInstruction(0, Integer.parseInt(createPopup.Tempo.text.toString()), createPopup.Interpolate.isChecked)
-            } else {
-                program.addOrChangeInstruction(Integer.parseInt(createPopup.BarNumber.text.toString()), Integer.parseInt(createPopup.Tempo.text.toString()), createPopup.Interpolate.isChecked)
+            try {
+                if (program.states.isEmpty()) { program.addOrChangeInstruction(0, Integer.parseInt(createPopup.Tempo.text.toString()), false) }
+                else { program.addOrChangeInstruction(Integer.parseInt(createPopup.BarNumber.text.toString()), Integer.parseInt(createPopup.Tempo.text.toString()), createPopup.Interpolate.isChecked) }
+                if (Integer.parseInt(createPopup.Tempo.text.toString()) == 0) { program.states.remove(Integer.parseInt(createPopup.BarNumber.text.toString())) }
+            } catch (e: NumberFormatException) {
+                Toast.makeText(this, "Some inputs are missing.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
             }
+            try {
+                popup.dismiss()
+            } catch (e: UninitializedPropertyAccessException) {}
+            createProgramActivity.graph.removeAllSeries()
             val graphArray = mutableListOf<DataPoint>()
-            for (i in program.states.toSortedMap().toList()) { graphArray.plusElement(DataPoint(i.first.toDouble(), i.second.tempo.toDouble())) }
+            var tempo = 0
+            val instructions = program.states.toSortedMap().toList()
+            for (i in instructions) {
+                if (!i.second.interpolate) { graphArray.add(DataPoint(i.first.toDouble() + 1, tempo.toDouble())) }
+                graphArray.add(DataPoint(i.first.toDouble() + 1, i.second.tempo.toDouble()))
+                tempo = i.second.tempo
+            }
             createProgramActivity.graph.addSeries(LineGraphSeries(graphArray.toTypedArray()))
-            popup.dismiss()
+            createProgramActivity.graph.viewport.setMinY(0.0)
+            createProgramActivity.graph.viewport.setMaxY(instructions[instructions.size - 1].second.tempo.toDouble())
+            createProgramActivity.graph.viewport.setMinX(1.0)
+            createProgramActivity.graph.viewport.setMaxX((instructions[instructions.size - 1].first.toDouble() + 1).coerceAtLeast(8.0))
         }
     }
 }
 
 class Program : Runnable{
     var states = mutableMapOf<Int, MetronomeState>()
-    var compiled = mutableListOf<Long>()
-    var handler = Handler(Looper.getMainLooper())
-    var soundPool: SoundPool = SoundPool.Builder().setMaxStreams(1).setAudioAttributes(AudioAttributes.Builder().setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).setUsage(AudioAttributes.USAGE_GAME).build()).build()
-    var soundID = soundPool.load(appContext, R.raw.beep, 1)
-    var playHead = 0
-    var volume = 1F
+    private var compiled = mutableListOf<Long>()
+    private var handler = Handler(Looper.getMainLooper())
+    private var soundPool: SoundPool = SoundPool.Builder().setMaxStreams(1).setAudioAttributes(AudioAttributes.Builder().setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).setUsage(AudioAttributes.USAGE_GAME).build()).build()
+    private var soundID = soundPool.load(appContext, R.raw.beep, 1)
+    private var playHead = 0
+    private var volume = 1F
 
     fun addOrChangeInstruction(bar: Int, tempo: Int, interpolate: Boolean): Program {
         states[(bar - 1).coerceAtLeast(0)] = MetronomeState().setTempo(tempo).setInterpolation(interpolate)
@@ -142,12 +201,15 @@ class Program : Runnable{
     }
 
     fun compile(): Program{
+        compiled = mutableListOf()
         val instructions = states.toSortedMap().toList()
         var tempo = instructions[0].second.tempo
-        for (instruction in 0..instructions.size) {
+        var count = 0
+        for (instruction in instructions.indices) {
             tempo = instructions[instruction].second.tempo
+            if (tempo <= 0) { break }
             try {
-                for (barNumber in instructions[instruction].first..instructions[instruction + 1].first) {
+                for (barNumber in (instructions[instruction].first + count)..instructions[instruction + 1].first) {
                     for (beatNumber in (barNumber * 4) until (barNumber * 4) + BEATS_PER_MEASURE) {
                         if (instructions[instruction + 1].second.interpolate) {
                             tempo += (instructions[instruction + 1].second.tempo - instructions[instruction].second.tempo) / (BEATS_PER_MEASURE * (instructions[instruction + 1].first - instructions[instruction].first))
@@ -160,13 +222,40 @@ class Program : Runnable{
             } catch (e: IndexOutOfBoundsException) {
                 break
             }
+            count ++
         }
-        compiled.add((60000 / instructions[instructions.size - 1].second.tempo).toLong())
+        compiled.add((60000 / tempo).toLong())
         return this
     }
 
     fun execute() {
         handler.post(this)
+    }
+
+    fun save(filename: String): Program {
+        var byteArray = byteArrayOf()
+        val instructions = states.toSortedMap().toList()
+        for (instruction in instructions) {
+            byteArray += instruction.first.toByte()
+            byteArray += instruction.second.tempo.toByte()
+            byteArray += (if (instruction.second.interpolate) 1 else 0).toByte()
+        }
+        val file = File(appContext.filesDir, "$filename.met")
+        try {
+            file.delete()
+        } catch (e: FileNotFoundException) {}
+        file.createNewFile()
+        file.writeBytes(byteArray)
+        return this
+    }
+
+    fun load(filename: String): Program {
+        states = mutableMapOf()
+        try {
+            val byteArray = File(appContext.filesDir, "$filename.met").readBytes()
+            for (byte in byteArray.indices step 3) { states[byteArray[byte].toInt()] = MetronomeState().setTempo(byteArray[byte + 1].toInt()).setInterpolation(byteArray[byte + 2].toInt() == 1) }
+        } catch (e:FileNotFoundException) {}
+        return this
     }
 
     override fun run() {
@@ -213,7 +302,7 @@ class Metronome(metronomeState: MetronomeState) : Runnable {
     private var soundID = 0
 
     init {
-        handler.post(this)
+        //handler.post(this)
     }
 
     fun toggle() {

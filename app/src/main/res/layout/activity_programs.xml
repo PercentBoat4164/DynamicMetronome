@@ -2,26 +2,15 @@
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <com.google.android.material.bottomnavigation.BottomNavigationView
-        android:id="@+id/bottomNavigationView"
-        android:layout_width="411dp"
-        android:layout_height="654dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
+    <ListView
+        android:id="@+id/ListView"
+        android:layout_width="409dp"
+        android:layout_height="646dp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
-
-        <ViewStub
-            android:id="@+id/viewStub"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout="@android:layout/list_content" />
-
-    </com.google.android.material.bottomnavigation.BottomNavigationView>
+        app:layout_constraintTop_toTopOf="parent" />
 
     <Button
         android:id="@+id/HomeButton"
@@ -41,11 +30,10 @@
         android:layout_marginTop="12dp"
         android:layout_marginEnd="16dp"
         android:clickable="true"
-        app:layout_constraintEnd_toEndOf="@+id/bottomNavigationView"
-        app:layout_constraintTop_toBottomOf="@+id/bottomNavigationView"
+        app:layout_constraintEnd_toEndOf="@+id/ListView"
+        app:layout_constraintTop_toBottomOf="@+id/ListView"
         app:srcCompat="@android:drawable/ic_menu_add"
         android:contentDescription="@string/create_new_program"
         android:focusable="true" />
-
 
 </androidx.constraintlayout.widget.ConstraintLayout>
