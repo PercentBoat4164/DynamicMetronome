@@ -16,4 +16,6 @@
     <string name="program_play_button">Play the current program.</string>
     <string name="cancel">Cancel</string>
     <string name="program_name">Program name</string>
+    <string name="plays_program">Plays program</string>
+    <string name="delete">Delete</string>
 </resources>
