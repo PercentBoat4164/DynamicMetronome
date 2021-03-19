@@ -5,13 +5,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <ListView
-        android:id="@+id/ListView"
-        android:layout_width="409dp"
-        android:layout_height="646dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
     <Button
         android:id="@+id/HomeButton"
         android:layout_width="wrap_content"
@@ -27,13 +20,20 @@
         android:id="@+id/NewProgramButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:layout_marginEnd="16dp"
+        android:layout_marginStart="336dp"
+        android:layout_marginTop="8dp"
         android:clickable="true"
-        app:layout_constraintEnd_toEndOf="@+id/ListView"
-        app:layout_constraintTop_toBottomOf="@+id/ListView"
-        app:srcCompat="@android:drawable/ic_menu_add"
         android:contentDescription="@string/create_new_program"
-        android:focusable="true" />
+        android:focusable="true"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/recyclerView"
+        app:srcCompat="@android:drawable/ic_menu_add" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerView"
+        android:layout_width="411dp"
+        android:layout_height="649dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
