@@ -1,38 +1,25 @@
 package thadd.schelp.dynamicmetronome
 
-import android.annotation.SuppressLint
-import android.content.Context
 import android.content.res.Resources
-import android.media.AudioAttributes
-import android.media.SoundPool
 import android.os.*
 import android.view.Gravity
-import android.view.View
-import android.view.ViewGroup
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
-import androidx.recyclerview.widget.RecyclerView
 import com.jjoe64.graphview.series.DataPoint
 import com.jjoe64.graphview.series.LineGraphSeries
 import thadd.schelp.dynamicmetronome.databinding.*
 import java.io.File
-import java.io.FileNotFoundException
-import java.lang.IndexOutOfBoundsException
 import java.lang.NumberFormatException
-import java.util.zip.Inflater
 
 const val MIN_TEMPO = 20
 const val MAX_TEMPO = 300F
 const val STARTING_TEMPO = 200
 const val BEATS_PER_MEASURE = 4
 
-@SuppressLint("StaticFieldLeak")
-lateinit var appContext: Context
-
 /*
-
+Currently following tutorial at:
 https://www.raywenderlich.com/1560485-android-recyclerview-tutorial-with-kotlin
-
+in order to master the recycler layout which is needed for displaying a list of programs.
  */
 
 
@@ -44,8 +31,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var programsActivity: ActivityProgramsBinding
     private lateinit var createProgramActivity: CreateProgramBinding
     private lateinit var createPopup: CreatePopupBinding
-    private var metronomeState = MetronomeState()
-    private var metronome = Metronome(metronomeState)
+    private var metronome = Metronome(MetronomeState(), this)
     private lateinit var metronomeProgram: MetronomeProgram
     private lateinit var popup: PopupWindow
     private var programs = mutableListOf<String>()
@@ -60,11 +46,9 @@ class MainActivity : AppCompatActivity() {
         createPopup = CreatePopupBinding.inflate(layoutInflater)
         setContentView(mainActivity.root)
 
-        appContext = applicationContext
-
         metronome.generateSoundIDs()
 
-        metronomeProgram = MetronomeProgram()
+        metronomeProgram = MetronomeProgram(metronome, this)
 
         buildHomeScreenGUI()
         buildProgramsScreenGUI()
@@ -78,15 +62,15 @@ class MainActivity : AppCompatActivity() {
         mainActivity.Tempo.value = STARTING_TEMPO
         mainActivity.Tempo.wrapSelectorWheel = false
         mainActivity.Tempo.displayedValues = Array(MAX_TEMPO.toInt()){(it + MIN_TEMPO).toString()}
-        mainActivity.Tempo.setOnValueChangedListener { _: NumberPicker, _: Int, tempo: Int -> metronomeState.setTempo(tempo); mainActivity.TempoSeekbar.progress = (tempo.toFloat() / MAX_TEMPO * 100).toInt() }
+        mainActivity.Tempo.setOnValueChangedListener { _: NumberPicker, _: Int, tempo: Int -> metronome.state.setTempo(tempo); mainActivity.TempoSeekbar.progress = (tempo.toFloat() / MAX_TEMPO * 100).toInt() }
 
-        mainActivity.QuarterMute.setOnCheckedChangeListener{ _: CompoundButton, isChecked: Boolean -> if (isChecked) { metronome.setQuarterVolume(0F)} else { metronome.setQuarterVolume(mainActivity.QuarterVolume.progress / 100F) } }
+        mainActivity.QuarterMute.setOnCheckedChangeListener{ _: CompoundButton, isChecked: Boolean -> if (isChecked) { metronome.setVolume(0F)} else { metronome.setVolume(mainActivity.QuarterVolume.progress / 100F) } }
 
-        mainActivity.StartStopButton.setOnClickListener{ metronome.toggle() }
+        mainActivity.StartStopButton.setOnClickListener{ metronome.togglePlaying() }
 
         mainActivity.QuarterVolume.setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
-                metronome.setQuarterVolume(progress / 100F)
+                metronome.setVolume(progress / 100F)
                 mainActivity.QuarterMute.isChecked = false
             }
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
@@ -97,8 +81,8 @@ class MainActivity : AppCompatActivity() {
         mainActivity.TempoSeekbar.setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 if (fromUser) {
-                    metronomeState.setTempo((progress * ((MAX_TEMPO - MIN_TEMPO) / 100)).toInt() + MIN_TEMPO)
-                    mainActivity.Tempo.value = metronomeState.tempo
+                    metronome.state.setTempo((progress * ((MAX_TEMPO - MIN_TEMPO) / 100)).toInt() + MIN_TEMPO)
+                    mainActivity.Tempo.value = metronome.state.tempo
                 }
             }
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
@@ -116,18 +100,6 @@ class MainActivity : AppCompatActivity() {
 
         var i = 0
         File(filesDir, "/").walk().forEach { if (i != 0) { programs.add(it.name) }; i++ }
-//        programsActivity.ListView.adapter = programsArrayAdapter
-//        programsActivity.ListView.setOnItemClickListener{
-//            parent: AdapterView<*>, _: View, position: Int, _: Long ->
-//            val selectedProgram = parent.getItemAtPosition(position)
-//            program.load(selectedProgram.toString().dropLast(4))
-//            setContentView(createProgramActivity.root)
-//            createProgramActivity.ProgramName.setText(selectedProgram.toString().dropLast(4))
-//            createPopup.BarNumber.setText("0")
-//            createPopup.Tempo.setText(program.states[0]?.tempo.toString())
-//            createPopup.Interpolate.isChecked = program.states[0]?.interpolate == true
-//            createPopup.ConfirmButton.callOnClick()
-//        }
     }
 
     private fun buildCreateProgramScreenGUI() {
@@ -145,6 +117,7 @@ class MainActivity : AppCompatActivity() {
             createPopup.BarNumber.setText("")
             createPopup.Tempo.setText("")
             createPopup.Interpolate.isChecked = false
+            metronomeProgram.states = mutableMapOf()
             setContentView(programsActivity.root)
             if (!programs.contains(createProgramActivity.ProgramName.text.toString() + ".met")) {
                 programs.add(createProgramActivity.ProgramName.text.toString() +".met")
@@ -195,168 +168,28 @@ class MainActivity : AppCompatActivity() {
     }
 }
 
-class ProgramRecyclerAdapter(private val programs: ArrayList<MetronomeProgram>) : RecyclerView.Adapter<ProgramRecyclerAdapter.ProgramHolder>() {
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ProgramHolder {
-        TODO("Not yet implemented")
-    }
-
-    override fun onBindViewHolder(holder: ProgramHolder, position: Int) {
-        TODO("Not yet implemented")
-    }
-
-    override fun getItemCount() = programs.size
-
-    class ProgramHolder(private val view: View): RecyclerView.ViewHolder(view), View.OnClickListener {
-        private var program: MetronomeProgram? = null
-        init { view.setOnClickListener(this) }
-
-        override fun onClick(v: View?) {
-            TODO("Not yet implemented")
-        }
-
-        companion object {
-            private val PROGRAM_KEY = "PROGRAM"
-        }
-    }
-}
-
-class MetronomeProgram : Runnable {
-    var states = mutableMapOf<Int, MetronomeState>()
-    private var compiled = mutableListOf<Long>()
-    private var handler = Handler(Looper.getMainLooper())
-    private var soundPool: SoundPool = SoundPool.Builder().setMaxStreams(1).setAudioAttributes(AudioAttributes.Builder().setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).setUsage(AudioAttributes.USAGE_GAME).build()).build()
-    private var soundID = soundPool.load(appContext, R.raw.beep, 1)
-    private var playHead = 0
-    private var volume = 1F
-
-    fun addOrChangeInstruction(bar: Int, tempo: Int, interpolate: Boolean): MetronomeProgram {
-        states[(bar - 1).coerceAtLeast(0)] = MetronomeState().setTempo(tempo).setInterpolation(interpolate)
-        return this
-    }
-
-    fun compile(): MetronomeProgram{
-        compiled = mutableListOf()
-        val instructions = states.toSortedMap().toList()
-        var tempo = instructions[0].second.tempo
-        var count = 0
-        for (instruction in instructions.indices) {
-            tempo = instructions[instruction].second.tempo
-            if (tempo <= 0) { break }
-            try {
-                for (barNumber in (instructions[instruction].first + count)..instructions[instruction + 1].first) {
-                    for (beatNumber in (barNumber * 4) until (barNumber * 4) + BEATS_PER_MEASURE) {
-                        if (instructions[instruction + 1].second.interpolate) {
-                            tempo += (instructions[instruction + 1].second.tempo - instructions[instruction].second.tempo) / (BEATS_PER_MEASURE * (instructions[instruction + 1].first - instructions[instruction].first))
-                            compiled.add((60000 / tempo).toLong())
-                        } else {
-                            compiled.add((60000 / tempo).toLong())
-                        }
-                    }
-                }
-            } catch (e: IndexOutOfBoundsException) {
-                break
-            }
-            count ++
-        }
-        compiled.add((60000 / tempo).toLong())
-        return this
-    }
-
-    fun execute() {
-        handler.post(this)
-    }
-
-    fun save(filename: String): MetronomeProgram {
-        var byteArray = byteArrayOf()
-        val instructions = states.toSortedMap().toList()
-        for (instruction in instructions) {
-            byteArray += instruction.first.toByte()
-            byteArray += instruction.second.tempo.toByte()
-            byteArray += (if (instruction.second.interpolate) 1 else 0).toByte()
-        }
-        val file = File(appContext.filesDir, "$filename.met")
-        try {
-            file.delete()
-        } catch (e: FileNotFoundException) {}
-        file.createNewFile()
-        file.writeBytes(byteArray)
-        return this
-    }
-
-    fun load(filename: String): MetronomeProgram {
-        states = mutableMapOf()
-        try {
-            val byteArray = File(appContext.filesDir, "$filename.met").readBytes()
-            for (byte in byteArray.indices step 3) { states[byteArray[byte].toInt()] = MetronomeState().setTempo(byteArray[byte + 1].toInt()).setInterpolation(byteArray[byte + 2].toInt() == 1) }
-        } catch (e:FileNotFoundException) {}
-        return this
-    }
-
-    override fun run() {
-        try {
-            handler.postDelayed(this, compiled[playHead])
-            playHead++
-            soundPool.play(soundID, volume, volume, 0, 0, 2F)
-        } catch (e: IndexOutOfBoundsException) {
-            playHead = 0
-        }
-    }
-}
-
-class MetronomeState {
-    var tempo = STARTING_TEMPO
-    var soundPool: SoundPool = SoundPool.Builder().setMaxStreams(1).setAudioAttributes(AudioAttributes.Builder().setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).setUsage(AudioAttributes.USAGE_GAME).build()).build()
-    var volume = 1F
-    var interval = (60000F / tempo).toLong()
-    var interpolate = false
-
-    @JvmName("setTempo1")
-    fun setTempo(newTempo: Int) : MetronomeState {
-        tempo = newTempo
-        interval = (60000F / tempo).toLong()
-        return this
-    }
-
-    @JvmName("setVolume1")
-    fun setVolume(newVolume: Float) : MetronomeState {
-        volume = newVolume
-        return this
-    }
-
-    fun setInterpolation(interpolation: Boolean): MetronomeState {
-        interpolate = interpolation
-        return this
-    }
-}
-
-class Metronome(metronomeState: MetronomeState) : Runnable {
-    private var isPlaying = false
-    private var state = metronomeState
-    private var handler = Handler(Looper.getMainLooper())
-    private var soundID = 0
-
-    init {
-        //handler.post(this)
-    }
-
-    fun toggle() {
-        isPlaying = !isPlaying
-    }
-
-    fun setQuarterVolume(volume: Float) {
-        state.setVolume(volume)
-    }
-
-    fun generateSoundIDs() {
-        soundID = state.soundPool.load(appContext, R.raw.beep, 1)
-    }
-
-    override fun run() {
-        handler.postDelayed(this, state.interval - 1)
-        if (isPlaying) {
-            state.soundPool.play(soundID, state.volume, state.volume, 0, 0, 2F)
-        } else {
-            state.soundPool.play(soundID, 0F, 0F, 0, 0, 2F)
-        }
-    }
-}
+//class ProgramsRecyclerAdapter(private val programs: ArrayList<MetronomeProgram>) : RecyclerView.Adapter<ProgramsRecyclerAdapter.ProgramHolder>() {
+//    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ProgramHolder {
+//        val inflatedView = parent.inflate(R.layout.program_entry, false)
+//        return ProgramHolder(inflatedView)
+//    }
+//
+//    override fun onBindViewHolder(holder: ProgramHolder, position: Int) {
+//        TODO("Not yet implemented")
+//    }
+//
+//    override fun getItemCount() = programs.size
+//
+//    class ProgramHolder(private val view: View): RecyclerView.ViewHolder(view), View.OnClickListener {
+//        private var program: MetronomeProgram? = null
+//        init { view.setOnClickListener(this) }
+//
+//        override fun onClick(v: View?) {
+//            TODO("Not yet implemented")
+//        }
+//
+//        companion object {
+//            private val PROGRAM_KEY = "PROGRAM"
+//        }
+//    }
+//}
