@@ -12,8 +12,9 @@ import java.lang.IndexOutOfBoundsException
 class MetronomeProgram(attachToMetronome: Metronome, appContext: Context) {
     var states = mutableMapOf<Int, MetronomeState>()
     var metronome = attachToMetronome
-    private var compiledInstructions = mutableListOf<Long>()
+    var compiledInstructions = mutableListOf<Long>()
     private var context = appContext
+    var name = ""
 
     fun addOrChangeInstruction(bar: Int, tempo: Int, interpolate: Boolean): MetronomeProgram {
         if (tempo > 0) { states[(bar - 1).coerceAtLeast(0)] = MetronomeState().setTempo(tempo).setInterpolation(interpolate) } else { states.remove(bar-1) }

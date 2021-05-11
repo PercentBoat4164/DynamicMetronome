@@ -1,20 +1,16 @@
-package thadd.schelp.dynamicmetronome
+/*
+----------------------------------------------GOALS-------------------------------------------------
+ v Learn Kotlin and create a metronome class
+ v Add support for programs.
+ - Make the GUI look good and be easy to use.
+ - Add support for changing tempo during a bar in programs.
+ - Add support for multiple sound profiles.
+ - Add support for multiple time signatures in and out of programs.
+ - Add support for at least the main four subdivisions (16th, 8th, 8th3rd, and 4th)
+ ? Add support for editing programs in a better way (e.g. selector for count off, moving portions of
+       programs, copying from other programs or the current program, etc.).
+ */
 
-import android.content.res.Resources
-import android.os.*
-import android.view.Gravity
-import android.widget.*
-import androidx.appcompat.app.AppCompatActivity
-import com.jjoe64.graphview.series.DataPoint
-import com.jjoe64.graphview.series.LineGraphSeries
-import thadd.schelp.dynamicmetronome.databinding.*
-import java.io.File
-import java.lang.NumberFormatException
-
-const val MIN_TEMPO = 20
-const val MAX_TEMPO = 300F
-const val STARTING_TEMPO = 200
-const val BEATS_PER_MEASURE = 4
 
 /*
 Currently following tutorial at:
@@ -23,23 +19,44 @@ in order to master the recycler layout which is needed for displaying a list of 
  */
 
 
+package thadd.schelp.dynamicmetronome
+
+import android.content.Context
+import android.content.res.Resources
+import android.os.*
+import android.util.Log
+import android.view.Gravity
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.*
+import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.jjoe64.graphview.series.DataPoint
+import com.jjoe64.graphview.series.LineGraphSeries
+import thadd.schelp.dynamicmetronome.databinding.*
+import java.io.*
 
 
+const val MIN_TEMPO = 20
+const val MAX_TEMPO = 300F
+const val STARTING_TEMPO = 200
+const val BEATS_PER_MEASURE = 4
 
 class MainActivity : AppCompatActivity() {
     private lateinit var mainActivity: ActivityMainBinding
     private lateinit var programsActivity: ActivityProgramsBinding
     private lateinit var createProgramActivity: CreateProgramBinding
     private lateinit var createPopup: CreatePopupBinding
-    private var metronome = Metronome(MetronomeState(), this)
     private lateinit var metronomeProgram: MetronomeProgram
     private lateinit var popup: PopupWindow
+
     private var programs = mutableListOf<String>()
-    private lateinit var programsArrayAdapter: ArrayAdapter<String>
+    private var metronome = Metronome(MetronomeState(), this)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        programsArrayAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, programs)
         mainActivity = ActivityMainBinding.inflate(layoutInflater)
         programsActivity = ActivityProgramsBinding.inflate(layoutInflater)
         createProgramActivity = CreateProgramBinding.inflate(layoutInflater)
@@ -48,7 +65,7 @@ class MainActivity : AppCompatActivity() {
 
         metronome.generateSoundIDs()
 
-        metronomeProgram = MetronomeProgram(metronome, this)
+        metronomeProgram = MetronomeProgram(metronome, applicationContext)
 
         buildHomeScreenGUI()
         buildProgramsScreenGUI()
@@ -62,29 +79,37 @@ class MainActivity : AppCompatActivity() {
         mainActivity.Tempo.value = STARTING_TEMPO
         mainActivity.Tempo.wrapSelectorWheel = false
         mainActivity.Tempo.displayedValues = Array(MAX_TEMPO.toInt()){(it + MIN_TEMPO).toString()}
-        mainActivity.Tempo.setOnValueChangedListener { _: NumberPicker, _: Int, tempo: Int -> metronome.state.setTempo(tempo); mainActivity.TempoSeekbar.progress = (tempo.toFloat() / MAX_TEMPO * 100).toInt() }
+        mainActivity.Tempo.setOnValueChangedListener { _: NumberPicker, _: Int, tempo: Int -> metronome.state.setTempo(
+            tempo
+        ); mainActivity.TempoSeekbar.progress = (tempo.toFloat() / MAX_TEMPO * 100).toInt() }
 
-        mainActivity.QuarterMute.setOnCheckedChangeListener{ _: CompoundButton, isChecked: Boolean -> if (isChecked) { metronome.setVolume(0F)} else { metronome.setVolume(mainActivity.QuarterVolume.progress / 100F) } }
+        mainActivity.QuarterMute.setOnCheckedChangeListener{ _: CompoundButton, isChecked: Boolean -> if (isChecked) { metronome.setVolume(
+            0F
+        )} else { metronome.setVolume(mainActivity.QuarterVolume.progress / 100F) } }
 
         mainActivity.StartStopButton.setOnClickListener{ metronome.togglePlaying() }
 
-        mainActivity.QuarterVolume.setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
+        mainActivity.QuarterVolume.setOnSeekBarChangeListener(object :
+            SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
                 metronome.setVolume(progress / 100F)
                 mainActivity.QuarterMute.isChecked = false
             }
+
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
         mainActivity.QuarterVolume.progress = 100
 
-        mainActivity.TempoSeekbar.setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener {
+        mainActivity.TempoSeekbar.setOnSeekBarChangeListener(object :
+            SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 if (fromUser) {
                     metronome.state.setTempo((progress * ((MAX_TEMPO - MIN_TEMPO) / 100)).toInt() + MIN_TEMPO)
                     mainActivity.Tempo.value = metronome.state.tempo
                 }
             }
+
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
@@ -98,8 +123,21 @@ class MainActivity : AppCompatActivity() {
 
         programsActivity.NewProgramButton.setOnClickListener{ setContentView(createProgramActivity.root) }
 
-        var i = 0
-        File(filesDir, "/").walk().forEach { if (i != 0) { programs.add(it.name) }; i++ }
+//        var i = 0
+//        val file = File(filesDir.name, "names.txt")
+//        Log.d("------LOG------", if(file.exists()) {"exists"} else {"does not exist"})
+//        file.createNewFile()
+//        val filenames = file.readText().split("\n")
+        val filenames = arrayListOf("test", "test1", "test2")
+        for (filename in filenames) { programs.add(filename.dropLast(4)) }
+        programsActivity.ProgramList.layoutManager = LinearLayoutManager(applicationContext)
+        val adapter = MyRecyclerViewAdapter(applicationContext, programs)
+        adapter.setClickListener(object: MyRecyclerViewAdapter.ItemClickListener {
+            override fun onItemClick(view: View?, position: Int) {
+                metronome.attachProgram(MetronomeProgram(metronome, applicationContext).load(adapter.getItem(position)).compile().compiledInstructions)
+            }
+        })
+        programsActivity.ProgramList.adapter = adapter
     }
 
     private fun buildCreateProgramScreenGUI() {
@@ -107,7 +145,12 @@ class MainActivity : AppCompatActivity() {
         createProgramActivity.graph.viewport.isScalable = true
 
         createProgramActivity.NewElementButton.setOnClickListener{
-            popup = PopupWindow(createPopup.root, (Resources.getSystem().displayMetrics.widthPixels * .9).toInt(), (Resources.getSystem().displayMetrics.heightPixels * .9).toInt(), true)
+            popup = PopupWindow(
+                createPopup.root,
+                (Resources.getSystem().displayMetrics.widthPixels * .9).toInt(),
+                (Resources.getSystem().displayMetrics.heightPixels * .9).toInt(),
+                true
+            )
             popup.showAtLocation(programsActivity.root, Gravity.CENTER, 0, 0)
         }
 
@@ -120,8 +163,8 @@ class MainActivity : AppCompatActivity() {
             metronomeProgram.states = mutableMapOf()
             setContentView(programsActivity.root)
             if (!programs.contains(createProgramActivity.ProgramName.text.toString() + ".met")) {
-                programs.add(createProgramActivity.ProgramName.text.toString() +".met")
-                programsArrayAdapter.notifyDataSetChanged()
+                programs.add(createProgramActivity.ProgramName.text.toString() + ".met")
+                //TODO notify array adapter of data change
             }
         }
 
@@ -140,11 +183,23 @@ class MainActivity : AppCompatActivity() {
     private fun buildPopupGUI() {
         createPopup.ConfirmButton.setOnClickListener{
             try {
-                if (metronomeProgram.states.isEmpty()) { metronomeProgram.addOrChangeInstruction(0, Integer.parseInt(createPopup.Tempo.text.toString()), false) }
-                else { metronomeProgram.addOrChangeInstruction(Integer.parseInt(createPopup.BarNumber.text.toString()), Integer.parseInt(createPopup.Tempo.text.toString()), createPopup.Interpolate.isChecked) }
-                if (Integer.parseInt(createPopup.Tempo.text.toString()) == 0) { metronomeProgram.states.remove(Integer.parseInt(createPopup.BarNumber.text.toString())) }
+                if (metronomeProgram.states.isEmpty()) { metronomeProgram.addOrChangeInstruction(
+                    0, Integer.parseInt(
+                        createPopup.Tempo.text.toString()
+                    ), false
+                ) }
+                else { metronomeProgram.addOrChangeInstruction(
+                    Integer.parseInt(createPopup.BarNumber.text.toString()), Integer.parseInt(
+                        createPopup.Tempo.text.toString()
+                    ), createPopup.Interpolate.isChecked
+                ) }
+                if (Integer.parseInt(createPopup.Tempo.text.toString()) == 0) { metronomeProgram.states.remove(
+                    Integer.parseInt(
+                        createPopup.BarNumber.text.toString()
+                    )
+                ) }
             } catch (e: NumberFormatException) {
-                Toast.makeText(this, "Some inputs are missing.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(applicationContext, "Some inputs are missing.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             try {
@@ -155,7 +210,12 @@ class MainActivity : AppCompatActivity() {
             var tempo = 0
             val instructions = metronomeProgram.states.toSortedMap().toList()
             for (i in instructions) {
-                if (!i.second.interpolate) { graphArray.add(DataPoint(i.first.toDouble() + 1, tempo.toDouble())) }
+                if (!i.second.interpolate) { graphArray.add(
+                    DataPoint(
+                        i.first.toDouble() + 1,
+                        tempo.toDouble()
+                    )
+                ) }
                 graphArray.add(DataPoint(i.first.toDouble() + 1, i.second.tempo.toDouble()))
                 tempo = i.second.tempo
             }
@@ -168,28 +228,47 @@ class MainActivity : AppCompatActivity() {
     }
 }
 
-//class ProgramsRecyclerAdapter(private val programs: ArrayList<MetronomeProgram>) : RecyclerView.Adapter<ProgramsRecyclerAdapter.ProgramHolder>() {
-//    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ProgramHolder {
-//        val inflatedView = parent.inflate(R.layout.program_entry, false)
-//        return ProgramHolder(inflatedView)
-//    }
-//
-//    override fun onBindViewHolder(holder: ProgramHolder, position: Int) {
-//        TODO("Not yet implemented")
-//    }
-//
-//    override fun getItemCount() = programs.size
-//
-//    class ProgramHolder(private val view: View): RecyclerView.ViewHolder(view), View.OnClickListener {
-//        private var program: MetronomeProgram? = null
-//        init { view.setOnClickListener(this) }
-//
-//        override fun onClick(v: View?) {
-//            TODO("Not yet implemented")
-//        }
-//
-//        companion object {
-//            private val PROGRAM_KEY = "PROGRAM"
-//        }
-//    }
-//}
+class MyRecyclerViewAdapter internal constructor(context: Context?, data: List<String>) :
+    RecyclerView.Adapter<MyRecyclerViewAdapter.ViewHolder>() {
+    private val mData: List<String> = data
+    private val mInflater: LayoutInflater = LayoutInflater.from(context)
+    private var mClickListener: ItemClickListener? = null
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        val view: View = mInflater.inflate(R.layout.program_entry, parent, false)
+        return ViewHolder(view)
+    }
+
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        val animal = mData[position]
+        holder.myTextView.text = animal
+    }
+
+    override fun getItemCount(): Int {
+        return mData.size
+    }
+
+    inner class ViewHolder internal constructor(itemView: View) : RecyclerView.ViewHolder(itemView),
+        View.OnClickListener {
+        var myTextView: TextView = itemView.findViewById(R.id.ProgramNameView)
+        override fun onClick(view: View) {
+            if (mClickListener != null) mClickListener!!.onItemClick(view, adapterPosition)
+        }
+
+        init {
+            itemView.setOnClickListener(this)
+        }
+    }
+
+    fun getItem(id: Int): String {
+        return mData[id]
+    }
+
+    fun setClickListener(itemClickListener: ItemClickListener?) {
+        mClickListener = itemClickListener
+    }
+
+    interface ItemClickListener {
+        fun onItemClick(view: View?, position: Int)
+    }
+}
