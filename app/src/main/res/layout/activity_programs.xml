@@ -26,11 +26,11 @@
         android:contentDescription="@string/create_new_program"
         android:focusable="true"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/recyclerView"
+        app:layout_constraintTop_toBottomOf="@+id/ProgramList"
         app:srcCompat="@android:drawable/ic_menu_add" />
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerView"
+        android:id="@+id/ProgramList"
         android:layout_width="411dp"
         android:layout_height="649dp"
         app:layout_constraintStart_toStartOf="parent"
