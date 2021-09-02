@@ -9,7 +9,7 @@
 
     <NumberPicker
         android:id="@+id/Tempo"
-        android:layout_width="@dimen/_316sdp"
+        android:layout_width="@dimen/_320sdp"
         android:layout_height="@dimen/_100sdp"
         android:orientation="horizontal"
         app:layout_constraintEnd_toEndOf="parent"
@@ -33,8 +33,7 @@
         android:id="@+id/StartStopButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="40dp"
-        android:layout_marginEnd="16dp"
+        android:layout_marginTop="@dimen/_40sdp"
         android:clickable="true"
         android:contentDescription="@string/play"
         android:focusable="true"
@@ -44,7 +43,7 @@
 
     <SeekBar
         android:id="@+id/TempoSeekbar"
-        android:layout_width="@dimen/_316sdp"
+        android:layout_width="@dimen/_320sdp"
         android:layout_height="@dimen/_20sdp"
         android:layout_marginTop="@dimen/_24sdp"
         app:layout_constraintStart_toStartOf="parent"
@@ -52,7 +51,7 @@
 
     <SeekBar
         android:id="@+id/QuarterVolume"
-        android:layout_width="@dimen/_158sdp"
+        android:layout_width="@dimen/_160sdp"
         android:layout_height="@dimen/_25sdp"
         app:layout_constraintBottom_toBottomOf="@+id/QuarterMute"
         app:layout_constraintEnd_toStartOf="@+id/QuarterMute"
@@ -77,10 +76,9 @@
         android:id="@+id/ProgramsButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="204dp"
         android:text="@string/programs_button"
         app:layout_constraintBottom_toBottomOf="@+id/StartStopButton"
-        app:layout_constraintEnd_toStartOf="@+id/StartStopButton"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@+id/StartStopButton"
         app:layout_constraintVertical_bias="0.0" />
 
