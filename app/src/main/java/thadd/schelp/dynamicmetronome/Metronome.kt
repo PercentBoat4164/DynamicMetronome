@@ -35,9 +35,7 @@ class MetronomeProgram(attachToMetronome: Metronome, appContext: Context) {
                         if (instructions[instruction + 1].second.interpolate) {
                             tempo += (instructions[instruction + 1].second.tempo - instructions[instruction].second.tempo) / (BEATS_PER_MEASURE * (instructions[instruction + 1].first - instructions[instruction].first))
                             compiledInstructions.add((60000 / tempo).toLong())
-                        } else {
-                            compiledInstructions.add((60000 / tempo).toLong())
-                        }
+                        } else { compiledInstructions.add((60000 / tempo).toLong()) }
                     }
                 }
             } catch (e: IndexOutOfBoundsException) {
@@ -64,9 +62,7 @@ class MetronomeProgram(attachToMetronome: Metronome, appContext: Context) {
             byteArray += (if (instruction.second.interpolate) 1 else 0).toByte()
         }
         val file = File(context.filesDir, "$filename.met")
-        try {
-            file.delete()
-        } catch (e: FileNotFoundException) {}
+        try { file.delete() } catch (e: FileNotFoundException) {}
         file.createNewFile()
         file.writeBytes(byteArray)
         return this
