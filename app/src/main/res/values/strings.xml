@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">Dynamic Metronome</string>
+    <string name="app_version">a.0.1</string>
     <string name="select_tempo">Double tap the number picker above to type in a tempo.</string>
     <string name="play">Play</string>
     <string name="quarter_volume">Quarter note volume</string>
@@ -18,4 +19,5 @@
     <string name="program_name">Program name</string>
     <string name="plays_program">Plays program</string>
     <string name="delete">Delete</string>
+    <string name="delete_instructions">To delete an entry, input the bar number of the entry that you want to delete.</string>
 </resources>

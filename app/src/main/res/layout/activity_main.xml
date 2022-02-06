@@ -37,8 +37,8 @@
         android:clickable="true"
         android:contentDescription="@string/play"
         android:focusable="true"
-        app:layout_constraintEnd_toEndOf="@+id/QuarterMute"
-        app:layout_constraintTop_toBottomOf="@+id/QuarterMute"
+        app:layout_constraintEnd_toEndOf="@+id/QuarterPlaying"
+        app:layout_constraintTop_toBottomOf="@+id/QuarterPlaying"
         app:srcCompat="@android:drawable/ic_media_play" />
 
     <SeekBar
@@ -53,18 +53,18 @@
         android:id="@+id/QuarterVolume"
         android:layout_width="@dimen/_160sdp"
         android:layout_height="@dimen/_25sdp"
-        app:layout_constraintBottom_toBottomOf="@+id/QuarterMute"
-        app:layout_constraintEnd_toStartOf="@+id/QuarterMute"
+        app:layout_constraintBottom_toBottomOf="@+id/QuarterPlaying"
+        app:layout_constraintEnd_toStartOf="@+id/QuarterPlaying"
         app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/QuarterMute"
+        app:layout_constraintTop_toTopOf="@+id/QuarterPlaying"
         app:layout_constraintVertical_bias="0.0" />
 
     <Switch
-        android:id="@+id/QuarterMute"
+        android:id="@+id/QuarterPlaying"
         android:layout_width="@dimen/_158sdp"
         android:layout_height="@dimen/_25sdp"
-        android:layout_marginTop="404dp"
+        android:layout_marginTop="@dimen/_300sdp"
         android:text="@string/quarter_volume"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="1.0"

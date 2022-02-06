@@ -14,16 +14,16 @@
 
     <Button
         android:id="@+id/CancelButton"
-        android:layout_width="197dp"
-        android:layout_height="39dp"
+        android:layout_width="@dimen/_150sdp"
+        android:layout_height="@dimen/_35sdp"
         android:text="@string/cancel"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
     <Button
         android:id="@+id/ConfirmButton"
-        android:layout_width="202dp"
-        android:layout_height="39dp"
+        android:layout_width="@dimen/_150sdp"
+        android:layout_height="@dimen/_35sdp"
         android:text="@string/confirm"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
