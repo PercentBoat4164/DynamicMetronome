@@ -1,14 +1,17 @@
 package thadd.schelp.dynamicmetronome.metronome
 
+import thadd.schelp.dynamicmetronome.BEATS_PER_MEASURE
+import thadd.schelp.dynamicmetronome.STARTING_TEMPO
+
 import android.content.Context
 import android.graphics.Color
 import android.media.SoundPool
 import android.os.Handler
 import android.os.Looper
 import com.jjoe64.graphview.GraphView
+import com.jjoe64.graphview.Viewport
 import com.jjoe64.graphview.series.DataPoint
 import com.jjoe64.graphview.series.LineGraphSeries
-import thadd.schelp.dynamicmetronome.STARTING_TEMPO
 
 /**
  * The Metronome class
@@ -35,8 +38,16 @@ class Metronome() : Runnable {
      * @param soundID Initial soundID
      */
     constructor(tempo: Int=STARTING_TEMPO, soundID: Int) : this() {
+        series.setAnimated(true)
         this.tempo = tempo
         this.soundID = soundID
+    }
+
+    /**
+     * This default constructor ensures that the graph series will be animated.
+     */
+    init {
+        series.setAnimated(true)
     }
 
     /**
@@ -78,9 +89,6 @@ class Metronome() : Runnable {
         this.soundID = soundPool.load(context, sound, 1)
     }
 
-    /**
-     * Not intended for use by external entities. Plays the sound and queues up another one.
-     */
     override fun run() {
         if (playing) {  // if playing normal metronome
             handler.postDelayed(this, (60000F / tempo).toLong())
@@ -88,20 +96,20 @@ class Metronome() : Runnable {
         }
         else {  // if running a program
             if (program.length() > playHead) {
-                val instruction = program.getInstruction(playHead)
-                handler.postDelayed(this, instruction)
+                handler.postDelayed(this, program.getInstruction(playHead).toLong())
                 soundPool.play(soundID, volume, volume, playHead, 0, 1F)  // use playHead as priority so that each beat has a higher priority than the last.
 
                 // update graph to show new series
                 graph?.removeSeries(series)
-                series = LineGraphSeries(mutableListOf(DataPoint(playHead.toDouble() / 4, 0.0), DataPoint(playHead.toDouble() / 4, 1 / instruction.toDouble() * 60000)).toTypedArray())
-                series.color = Color.RED
+                series = LineGraphSeries(mutableListOf(DataPoint(playHead.toDouble() / BEATS_PER_MEASURE + 1, 0.0), DataPoint(playHead.toDouble() / BEATS_PER_MEASURE + 1, 1 / program.getInstruction(playHead) * 60000)).toTypedArray())
+                series.color = Color.GREEN
                 graph?.addSeries(series)
 
                 // increment the playHead
                 ++playHead
             }
             else {
+                graph?.removeSeries(series)
                 playHead = 0
             }
         }

@@ -7,57 +7,51 @@ import thadd.schelp.dynamicmetronome.BEATS_PER_MEASURE
  *
  * Contains a list of instructions which can be parsed by a Metronome to simulate accelerandos, or hold the tempo steady. Instructions can be added, changed, or removed. Programs must be compile before they can be executed by a Metronome.
  */
-class Program() {
+class Program {
     // list of compiled instructions. These take the form of a Long containing the number of milliseconds to wait between this beat and the next one. When time signatures are added, a new instruction format will be needed.
-    private var compiledInstructions = mutableListOf<Long>()
+    private var compiledInstructions = mutableListOf<Double>()
+    var highestTempo = 0.0
+    var lowestTempo = Double.MAX_VALUE
+    var numBars = 0
 
     // a hash table of bar numbers to instructions.
     var instructions = mutableMapOf<Int, Instruction>()
 
-    /**
-     *
-     */
-    constructor(byteArray: ByteArray) : this() {
-        setData(byteArray)
-    }
-
     fun addOrChangeInstruction(bar: Int, tempo: Int, interpolate: Boolean): Program {
         if (tempo > 0) {
-            instructions[(bar - 1).coerceAtLeast(0)] = Instruction().setTempo(tempo).setInterpolation(interpolate)
+            instructions[(bar).coerceAtLeast(0)] = Instruction().setTempo(tempo).setInterpolation(interpolate)
         }
         else {
-            instructions.remove(bar-1)
+            instructions.remove(bar)
         }
+        numBars = kotlin.math.max(bar, numBars)
+        highestTempo = kotlin.math.max(tempo.toDouble(), highestTempo)
+        lowestTempo = kotlin.math.min(tempo.toDouble(), lowestTempo)
         return this
     }
 
-    // FIXME: The compilation algorithm is broken.
     fun compile(): Program {
         compiledInstructions = mutableListOf()
         val instructions = instructions.toSortedMap().toList()
-        var tempo = instructions[0].second.tempo
-        var count = 0
+        var tempo = instructions[0].second.tempo.toDouble()
         for (instruction in instructions.indices) {
-            tempo = instructions[instruction].second.tempo
-            if (tempo <= 0) {
-                break
-            }
+            tempo = instructions[instruction].second.tempo.toDouble()
             try {
-                for (barNumber in (instructions[instruction].first + count)..instructions[instruction + 1].first) {
-                    for (beatNumber in (barNumber * 4) until (barNumber * 4) + BEATS_PER_MEASURE) {
+                val slope = (instructions[instruction + 1].second.tempo - instructions[instruction].second.tempo) / (BEATS_PER_MEASURE * (instructions[instruction + 1].first - instructions[instruction].first))
+                for (barNumber in (instructions[instruction].first) until instructions[instruction + 1].first) {
+                    for (beatNumber in 0 until BEATS_PER_MEASURE.toInt()) {
+                        compiledInstructions.add(60000.0 / tempo)
                         if (instructions[instruction + 1].second.interpolate) {
-                            tempo += (instructions[instruction + 1].second.tempo - instructions[instruction].second.tempo) / (BEATS_PER_MEASURE * (instructions[instruction + 1].first - instructions[instruction].first))
+                            tempo += slope
                         }
-                        compiledInstructions.add((60000 / tempo).toLong())
                     }
                 }
             } catch (e: IndexOutOfBoundsException) {
                 break
             }
-            count ++
         }
         // This instruction adds a down beat to the end of the program
-        compiledInstructions.add((60000 / tempo).toLong())
+        compiledInstructions.add((60000.0 / tempo))
         return this
     }
 
@@ -81,7 +75,7 @@ class Program() {
         return this
     }
 
-    fun getInstruction(position: Int): Long {
+    fun getInstruction(position: Int): Double {
         return compiledInstructions[position]
     }
 

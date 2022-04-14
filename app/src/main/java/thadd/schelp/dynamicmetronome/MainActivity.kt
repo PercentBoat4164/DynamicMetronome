@@ -6,6 +6,7 @@ import android.view.Gravity
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.jjoe64.graphview.Viewport
 import com.jjoe64.graphview.series.DataPoint
 import com.jjoe64.graphview.series.LineGraphSeries
 import thadd.schelp.dynamicmetronome.gui.CustomAdapter
@@ -17,7 +18,7 @@ import thadd.schelp.dynamicmetronome.metronome.Program
 const val MIN_TEMPO = 20f
 const val MAX_TEMPO = 500f
 const val STARTING_TEMPO = 130
-const val BEATS_PER_MEASURE = 4
+const val BEATS_PER_MEASURE = 4.0
 
 class MainActivity : AppCompatActivity() {
     private lateinit var mainActivity: ActivityMainBinding
@@ -114,8 +115,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun buildCreateProgramScreenGUI() {
         // Set up the graph
-        createProgramActivity.graph.viewport.isScrollable = true
-        createProgramActivity.graph.viewport.isScalable = true
+        createProgramActivity.graph.viewport?.isXAxisBoundsManual = true
+        createProgramActivity.graph.viewport?.isYAxisBoundsManual = true
         createProgramActivity.graph.removeAllSeries()
 
         // Set up the new element button's actions
@@ -128,7 +129,7 @@ class MainActivity : AppCompatActivity() {
         createProgramActivity.ConfirmButton.setOnClickListener{
             // Save the program to the appropriate file
             createProgramActivity.ProgramName.text.toString()
-            program.getData()
+//            program.getData()
 
             createPopup.BarNumber.setText("")
             createPopup.Tempo.setText("")
@@ -158,7 +159,7 @@ class MainActivity : AppCompatActivity() {
         createPopup.ConfirmButton.setOnClickListener{
             try {
                 if (program.instructions.isEmpty()) {
-                    program.addOrChangeInstruction(0, Integer.parseInt(createPopup.Tempo.text.toString()), false)
+                    program.addOrChangeInstruction(1, Integer.parseInt(createPopup.Tempo.text.toString()), false)
                 }
                 else {
                     program.addOrChangeInstruction(Integer.parseInt(createPopup.BarNumber.text.toString()), Integer.parseInt(createPopup.Tempo.text.toString()), createPopup.Interpolate.isChecked)
@@ -179,16 +180,18 @@ class MainActivity : AppCompatActivity() {
             val instructions = program.instructions.toSortedMap().toList()
             for (i in instructions) {
                 if (!i.second.interpolate) {
-                    graphArray.add(DataPoint(i.first.toDouble() + 1, tempo.toDouble()))
+                    graphArray.add(DataPoint(i.first.toDouble(), tempo.toDouble()))
                 }
-                graphArray.add(DataPoint(i.first.toDouble() + 1, i.second.tempo.toDouble()))
+                graphArray.add(DataPoint(i.first.toDouble(), i.second.tempo.toDouble()))
                 tempo = i.second.tempo
             }
             createProgramActivity.graph.addSeries(LineGraphSeries(graphArray.toTypedArray()))
-            createProgramActivity.graph.viewport.setMinY(0.0)
-            createProgramActivity.graph.viewport.setMaxY(instructions[instructions.size - 1].second.tempo.toDouble())
-            createProgramActivity.graph.viewport.setMinX(1.0)
-            createProgramActivity.graph.viewport.setMaxX((instructions[instructions.size - 1].first.toDouble() + 1).coerceAtLeast(8.0))
+            if (program.highestTempo != program.lowestTempo) {
+                createProgramActivity.graph.viewport.setMinX(1.0)
+                createProgramActivity.graph.viewport.setMaxX(program.numBars.toDouble())
+                createProgramActivity.graph.viewport.setMinY(program.lowestTempo - ((program.lowestTempo + program.highestTempo) / 2 - program.lowestTempo))
+                createProgramActivity.graph.viewport.setMaxY(program.highestTempo)
+            }
         }
     }
 }
