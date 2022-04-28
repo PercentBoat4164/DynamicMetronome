@@ -1,17 +1,14 @@
 package thadd.schelp.dynamicmetronome.metronome
 
-import thadd.schelp.dynamicmetronome.BEATS_PER_MEASURE
-import thadd.schelp.dynamicmetronome.STARTING_TEMPO
-
 import android.content.Context
 import android.graphics.Color
 import android.media.SoundPool
-import android.os.Handler
-import android.os.Looper
 import com.jjoe64.graphview.GraphView
-import com.jjoe64.graphview.Viewport
 import com.jjoe64.graphview.series.DataPoint
 import com.jjoe64.graphview.series.LineGraphSeries
+import thadd.schelp.dynamicmetronome.BEATS_PER_MEASURE
+import thadd.schelp.dynamicmetronome.STARTING_TEMPO
+import kotlin.system.measureNanoTime
 
 /**
  * The Metronome class
@@ -19,28 +16,26 @@ import com.jjoe64.graphview.series.LineGraphSeries
  * Plays sounds at a regular interval. The sound, interval, and whether or not it is currently playing can all be changed dynamically with helper functions.
  */
 class Metronome() : Runnable {
-    private lateinit var program: Program  // Attached Program
-
-    private var handler = Handler(Looper.getMainLooper())  // handler used to manage timing
+    private var priority = 1
+    private var thread = Thread(this)
     private var soundID = 0  // ID of sound resource
     private var soundPool = SoundPool.Builder().build()  // sound pool used to play sounds
     private var playHead = 0  // playHead of program
     private var series = LineGraphSeries(mutableListOf(DataPoint(0.0, 0.0), DataPoint(0.0, 100.0)).toTypedArray())  // series used to update GraphView
-    private var graph: GraphView? = null  // GraphView to display playHead on
-    private var playing = false  // is the metronome playing
-
+    private var graph: GraphView? = null  // GraphView to display programs on
+    var program = Program()  // Attached Program
+    var playing = false  // is the metronome playing
     var tempo = STARTING_TEMPO  // current tempo of metronome
     var volume = 100f  // volume of metronome
 
     /**
      * Creates a Metronome with a specific sound and tempo.
-     * @param tempo Initial tempo. Default: STARTING_TEMPO
-     * @param soundID Initial soundID
+     * @param graph overrides the graph
      */
-    constructor(tempo: Int=STARTING_TEMPO, soundID: Int) : this() {
+    constructor(graph: GraphView?, context: Context, sound: Int) : this() {
         series.setAnimated(true)
-        this.tempo = tempo
-        this.soundID = soundID
+        this.graph = graph
+        soundID = soundPool.load(context, sound, Int.MAX_VALUE)
     }
 
     /**
@@ -53,10 +48,10 @@ class Metronome() : Runnable {
     /**
      * Starts playing the Metronome
      */
-    private fun start() {
+    fun start() {
+        stop()
         playing = true
-        handler.removeCallbacks(this)  // clear any queued plays
-        handler.postDelayed(this, 100)  // queue a new play for right now
+        thread.start()
     }
 
     /**
@@ -64,67 +59,70 @@ class Metronome() : Runnable {
      */
     fun stop() {
         playing = false
-        handler.removeCallbacks(this)  // Clear any queued plays
+        if (thread.isAlive) {
+            thread.join()
+        }
+        thread = Thread(this)
+        thread.priority = Thread.MAX_PRIORITY
+        priority = 0
+        playHead = 0
     }
 
     /**
      * Toggle playing the Metronome. If the Metronome is playing, stop. Otherwise, start playing.
      */
     fun togglePlaying() {
-        if (!playing) {  // If stopped,
+        if (!playing) {
             start()
-        }
-        else {
+        } else {
             stop()
         }
     }
 
-    /**
-     * Set the soundID. This can be done on creation with the Metronome(Int, Int) constructor.
-     * The soundID controls which sound the Metronome uses for its clicks.
-     * @param context The application context
-     * @param sound The sound to use
-     */
-    fun setSoundID(context: Context, sound: Int) {
-        this.soundID = soundPool.load(context, sound, 1)
-    }
-
     override fun run() {
-        if (playing) {  // if playing normal metronome
-            handler.postDelayed(this, (60000F / tempo).toLong())
-            soundPool.play(soundID, volume, volume, 0, 0, 1F)
-        }
-        else {  // if running a program
-            if (program.length() > playHead) {
-                handler.postDelayed(this, program.getInstruction(playHead).toLong())
-                soundPool.play(soundID, volume, volume, playHead, 0, 1F)  // use playHead as priority so that each beat has a higher priority than the last.
-
-                // update graph to show new series
-                graph?.removeSeries(series)
-                series = LineGraphSeries(mutableListOf(DataPoint(playHead.toDouble() / BEATS_PER_MEASURE + 1, 0.0), DataPoint(playHead.toDouble() / BEATS_PER_MEASURE + 1, 1 / program.getInstruction(playHead) * 60000)).toTypedArray())
-                series.color = Color.GREEN
-                graph?.addSeries(series)
-
-                // increment the playHead
-                ++playHead
+        while (playing) {
+            if (playHead < program.length()) {
+                Thread.sleep((program.getInstruction(playHead) - measureNanoTime {
+                    soundPool.play(soundID, volume, volume, playHead, 0, 1F)
+                    graph?.removeSeries(series)
+                    series = LineGraphSeries(mutableListOf(DataPoint(playHead.toDouble() / BEATS_PER_MEASURE, 0.0), DataPoint(playHead.toDouble() / BEATS_PER_MEASURE, 1 / program.getInstruction(playHead) * 60000)).toTypedArray())
+                    series.color = Color.GREEN
+                    graph?.addSeries(series)
+                    ++playHead
+                } / 1000000F).toLong())
             }
-            else {
+            else if (playHead == program.length() && program.instructions.isNotEmpty()) {
+                playing = false
                 graph?.removeSeries(series)
                 playHead = 0
+                break
+            }
+            else {
+                 Thread.sleep((60000F / tempo - measureNanoTime {
+                     soundPool.play(soundID, volume, volume, priority++, 0, 2F)
+                 } / 1000000F).toLong())
             }
         }
     }
 
     /**
-     * Executes the program that was passed to it. The program must be compiled before hand.
-     * @param program The program to execute
+     * Executes the program that the metronome already has.
      */
-    fun executeProgram(program: Program, graph: GraphView?) {
-        this.program = program
-        handler.removeCallbacks(this)
-        handler.post(this)
-        if (graph != null) {
-            this.graph = graph
+    fun executeProgram() {
+        program.compile()
+        if (program.instructions.isNotEmpty()) {
+            graph?.removeAllSeries()
+            graph?.addSeries(LineGraphSeries(program.setGraph().toTypedArray()))
+            formatGraph()
+        }
+        start()
+    }
+
+    fun formatGraph() {
+        graph?.viewport?.setMaxY(program.highestTempo + program.highestTempo * .02)  // Highest tempo + 2% leaves a comfortable space
+        graph?.viewport?.setMinY(program.lowestTempo - program.lowestTempo * .02)  // Same here.
+        if (program.numBars != 0) {
+            graph?.viewport?.setMaxX(program.numBars.toDouble())
         }
     }
 }

@@ -1,8 +1,9 @@
 package thadd.schelp.dynamicmetronome.metronome
 
 import thadd.schelp.dynamicmetronome.STARTING_TEMPO
+import java.io.Serializable
 
-class Instruction {
+class Instruction : Serializable{
     var tempo = STARTING_TEMPO
     var interval = (60000F / tempo).toLong()
     var interpolate = false

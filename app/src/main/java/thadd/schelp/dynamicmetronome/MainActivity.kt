@@ -1,19 +1,23 @@
 package thadd.schelp.dynamicmetronome
 
+import android.content.Context
+import android.content.pm.ActivityInfo
 import android.content.res.Resources
 import android.os.Bundle
 import android.view.Gravity
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.jjoe64.graphview.Viewport
 import com.jjoe64.graphview.series.DataPoint
 import com.jjoe64.graphview.series.LineGraphSeries
+import thadd.schelp.dynamicmetronome.databinding.*
 import thadd.schelp.dynamicmetronome.gui.CustomAdapter
 import thadd.schelp.dynamicmetronome.gui.ProgramRecyclerModel
-import thadd.schelp.dynamicmetronome.databinding.*
 import thadd.schelp.dynamicmetronome.metronome.Metronome
-import thadd.schelp.dynamicmetronome.metronome.Program
+import java.io.File
+import java.io.IOException
+import java.io.ObjectOutputStream
+
 
 const val MIN_TEMPO = 20f
 const val MAX_TEMPO = 500f
@@ -26,11 +30,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var createProgramActivity: CreateProgramBinding
     private lateinit var createPopup: CreatePopupBinding
     private lateinit var popup: PopupWindow
-
-    private var programs = mutableListOf<String>()
-    private var mainMetronome = Metronome()
-
-    private val program = Program()
+    private lateinit var programEntry: ProgramEntryBinding
+    private lateinit var mainMetronome: Metronome
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,8 +39,10 @@ class MainActivity : AppCompatActivity() {
         programsActivity = ActivityProgramsBinding.inflate(layoutInflater)
         createProgramActivity = CreateProgramBinding.inflate(layoutInflater)
         createPopup = CreatePopupBinding.inflate(layoutInflater)
+        programEntry = ProgramEntryBinding.inflate(layoutInflater)
         setContentView(mainActivity.root)
-        mainMetronome.setSoundID(applicationContext, R.raw.beep)
+        mainMetronome = Metronome(createProgramActivity.graph, applicationContext, R.raw.beep)
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT  // @todo Find a way to make the orientation not break things.
         buildHomeScreenGUI()
         buildProgramsScreenGUI()
         buildCreateProgramScreenGUI()
@@ -52,8 +55,7 @@ class MainActivity : AppCompatActivity() {
         mainActivity.Tempo.value = STARTING_TEMPO
         mainActivity.Tempo.wrapSelectorWheel = false
         mainActivity.Tempo.displayedValues = Array(MAX_TEMPO.toInt()){(it + MIN_TEMPO.toInt()).toString()}
-        mainActivity.Tempo.setOnValueChangedListener {
-                _: NumberPicker, _: Int, tempo: Int ->
+        mainActivity.Tempo.setOnValueChangedListener { _: NumberPicker, _: Int, tempo: Int ->
             mainMetronome.tempo = tempo
             mainActivity.TempoSeekbar.progress = (tempo.toFloat() / MAX_TEMPO * 100).toInt()
         }
@@ -95,28 +97,49 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun buildProgramsScreenGUI() {
-        programsActivity.HomeButton.setOnClickListener{ setContentView(mainActivity.root) }
-        programsActivity.NewProgramButton.setOnClickListener{ setContentView(createProgramActivity.root) }
-//        var i = 0
-//        val file = File(filesDir.name, "names.txt")
-//        Log.d("------LOG------", if(file.exists()) {"exists"} else {"does not exist"})
-//        file.createNewFile()
-//        val filenames = file.readText().split("\n")
-        val filenames = arrayListOf("This", "is", "different!")
-        programsActivity.ProgramList.layoutManager = LinearLayoutManager(this)
-        val data = ArrayList<ProgramRecyclerModel>()
-        for (filename in filenames) {
-            programs.add(filename)
-            data.add(ProgramRecyclerModel(filename))
+        programsActivity.HomeButton.setOnClickListener{
+            mainMetronome.stop()
+            mainMetronome.program.clear()
+            setContentView(mainActivity.root)
         }
-        val adapter = CustomAdapter(data)
+        programsActivity.NewProgramButton.setOnClickListener{
+            if (mainMetronome.program.name.isNotEmpty()) {
+                createProgramActivity.ProgramName.setText(mainMetronome.program.name.substring(0..mainMetronome.program.name.length - 5))
+            }
+            if (mainMetronome.program.instructions.isEmpty()) {
+                createProgramActivity.graph.viewport?.setMaxX(1.0)
+                createProgramActivity.graph.viewport?.setMinX(0.0)
+                createProgramActivity.graph.viewport?.setMaxY(2.0)
+                createProgramActivity.graph.viewport?.setMinY(1.0)
+                createProgramActivity.graph.removeAllSeries()
+            }
+            setContentView(createProgramActivity.root)
+        }
+        createProgramActivity.graph.viewport?.isXAxisBoundsManual = true
+        createProgramActivity.graph.viewport?.isYAxisBoundsManual = true
+        createProgramActivity.graph.viewport?.setMaxX(1.0)
+        createProgramActivity.graph.viewport?.setMinX(0.0)
+        createProgramActivity.graph.viewport?.setMaxY(2.0)
+        createProgramActivity.graph.viewport?.setMinY(1.0)
+        createProgramActivity.graph.removeAllSeries()
+        programsActivity.ProgramList.layoutManager = LinearLayoutManager(this)
+        val files: ArrayList<out File>? = applicationContext.filesDir.listFiles()?.toCollection(ArrayList())
+        val data = ArrayList<ProgramRecyclerModel>()
+        if (files != null) {
+            for (file in files) {
+                data.add(ProgramRecyclerModel(file.name))
+            }
+        }
+        val adapter = CustomAdapter(data, applicationContext, mainMetronome)
         programsActivity.ProgramList.adapter = adapter
     }
 
     private fun buildCreateProgramScreenGUI() {
         // Set up the graph
-        createProgramActivity.graph.viewport?.isXAxisBoundsManual = true
-        createProgramActivity.graph.viewport?.isYAxisBoundsManual = true
+        createProgramActivity.graph.viewport?.setMaxX(1.0)
+        createProgramActivity.graph.viewport?.setMinX(0.0)
+        createProgramActivity.graph.viewport?.setMaxY(2.0)
+        createProgramActivity.graph.viewport?.setMinY(1.0)
         createProgramActivity.graph.removeAllSeries()
 
         // Set up the new element button's actions
@@ -128,56 +151,74 @@ class MainActivity : AppCompatActivity() {
         // Set up the confirm button's actions
         createProgramActivity.ConfirmButton.setOnClickListener{
             // Save the program to the appropriate file
-            createProgramActivity.ProgramName.text.toString()
-//            program.getData()
-
+            if (createProgramActivity.ProgramName.text.toString() != "") {
+                try {
+                    val file = ObjectOutputStream(applicationContext.openFileOutput(createProgramActivity.ProgramName.text.toString() + ".met", Context.MODE_PRIVATE))
+                    file.writeObject(mainMetronome.program)
+                    file.close()
+                } catch (e: IOException) {
+                    Toast.makeText(applicationContext, "Failed to save file!", Toast.LENGTH_SHORT).show()
+                }
+            }
+            mainMetronome.stop()
             createPopup.BarNumber.setText("")
             createPopup.Tempo.setText("")
+            createProgramActivity.ProgramName.setText("")
             createPopup.Interpolate.isChecked = false
+            createProgramActivity.graph.removeAllSeries()
+            mainMetronome.program.clear()
             setContentView(programsActivity.root)
-            if (!programs.contains(createProgramActivity.ProgramName.text.toString() + ".met")) {
-                programs.add(createProgramActivity.ProgramName.text.toString() + ".met")
-            }
+            buildProgramsScreenGUI()
         }
 
         createProgramActivity.ExecuteProgram.setOnClickListener{
             // Compile and execute the program on the main metronome
-            mainMetronome.executeProgram(program.compile(), createProgramActivity.graph)
+            if (!mainMetronome.playing) {
+                mainMetronome.executeProgram()
+            }
+            else {
+                mainMetronome.stop()
+            }
         }
 
         createProgramActivity.CancelButton.setOnClickListener{
+            mainMetronome.stop()
             createProgramActivity.graph.removeAllSeries()
             createPopup.BarNumber.setText("")
             createPopup.Tempo.setText("")
+            createProgramActivity.ProgramName.setText("")
             createPopup.Interpolate.isChecked = false
-            program.instructions = mutableMapOf()
+            mainMetronome.program.clear()
             setContentView(programsActivity.root)
         }
     }
 
     private fun buildPopupGUI() {
-        createPopup.ConfirmButton.setOnClickListener{
+        createPopup.ConfirmButton.setOnClickListener {
             try {
-                if (program.instructions.isEmpty()) {
-                    program.addOrChangeInstruction(1, Integer.parseInt(createPopup.Tempo.text.toString()), false)
+                if (mainMetronome.program.instructions.isEmpty()) {
+                    mainMetronome.program.addOrChangeInstruction(0, Integer.parseInt(createPopup.Tempo.text.toString()), false)
+                    mainMetronome.program.addOrChangeInstruction(Integer.parseInt(createPopup.BarNumber.text.toString()), Integer.parseInt(createPopup.Tempo.text.toString()), false)
+                } else {
+                    if (Integer.parseInt(createPopup.BarNumber.text.toString()) >= 0) {
+                        mainMetronome.program.addOrChangeInstruction(Integer.parseInt(createPopup.BarNumber.text.toString()), Integer.parseInt(createPopup.Tempo.text.toString()), createPopup.Interpolate.isChecked)
+                    } else {
+                        Toast.makeText(applicationContext, "The bar number cannot be less than 0!", Toast.LENGTH_SHORT).show()
+                    }
                 }
-                else {
-                    program.addOrChangeInstruction(Integer.parseInt(createPopup.BarNumber.text.toString()), Integer.parseInt(createPopup.Tempo.text.toString()), createPopup.Interpolate.isChecked)
-                }
-                if (Integer.parseInt(createPopup.Tempo.text.toString()) == 0) {
-                    program.instructions.remove(Integer.parseInt(createPopup.BarNumber.text.toString()))
-                }
+                /**@todo Handle inputs that create straight lines*/
             } catch (e: NumberFormatException) {
                 Toast.makeText(this, "Some inputs are missing.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             try {
                 popup.dismiss()
-            } catch (e: UninitializedPropertyAccessException) {}
+            } catch (e: UninitializedPropertyAccessException) {
+            }
             createProgramActivity.graph.removeAllSeries()
             val graphArray = mutableListOf<DataPoint>()
             var tempo = 0
-            val instructions = program.instructions.toSortedMap().toList()
+            val instructions = mainMetronome.program.instructions.toSortedMap().toList()
             for (i in instructions) {
                 if (!i.second.interpolate) {
                     graphArray.add(DataPoint(i.first.toDouble(), tempo.toDouble()))
@@ -186,12 +227,10 @@ class MainActivity : AppCompatActivity() {
                 tempo = i.second.tempo
             }
             createProgramActivity.graph.addSeries(LineGraphSeries(graphArray.toTypedArray()))
-            if (program.highestTempo != program.lowestTempo) {
-                createProgramActivity.graph.viewport.setMinX(1.0)
-                createProgramActivity.graph.viewport.setMaxX(program.numBars.toDouble())
-                createProgramActivity.graph.viewport.setMinY(program.lowestTempo - ((program.lowestTempo + program.highestTempo) / 2 - program.lowestTempo))
-                createProgramActivity.graph.viewport.setMaxY(program.highestTempo)
+            if (mainMetronome.program.numBars != 0) {
+                createProgramActivity.graph.viewport.setMaxX(mainMetronome.program.numBars.toDouble())
             }
+            mainMetronome.formatGraph()
         }
     }
 }

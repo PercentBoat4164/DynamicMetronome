@@ -1,36 +1,42 @@
 package thadd.schelp.dynamicmetronome.metronome
 
+import com.jjoe64.graphview.series.DataPoint
 import thadd.schelp.dynamicmetronome.BEATS_PER_MEASURE
+import java.io.Serializable
 
 /**
  * The Program class
  *
  * Contains a list of instructions which can be parsed by a Metronome to simulate accelerandos, or hold the tempo steady. Instructions can be added, changed, or removed. Programs must be compile before they can be executed by a Metronome.
  */
-class Program {
+class Program : Serializable {
+    var name: String = ""
     // list of compiled instructions. These take the form of a Long containing the number of milliseconds to wait between this beat and the next one. When time signatures are added, a new instruction format will be needed.
     private var compiledInstructions = mutableListOf<Double>()
-    var highestTempo = 0.0
+    var highestTempo = 2.0
     var lowestTempo = Double.MAX_VALUE
     var numBars = 0
+    var instructions = mutableMapOf<Int, Instruction>() // a hash table of bar numbers to instructions.
 
-    // a hash table of bar numbers to instructions.
-    var instructions = mutableMapOf<Int, Instruction>()
 
     fun addOrChangeInstruction(bar: Int, tempo: Int, interpolate: Boolean): Program {
+        val realBar = bar.coerceAtLeast(0)
         if (tempo > 0) {
-            instructions[(bar).coerceAtLeast(0)] = Instruction().setTempo(tempo).setInterpolation(interpolate)
+            instructions[realBar] = Instruction().setTempo(tempo).setInterpolation(interpolate)
         }
         else {
             instructions.remove(bar)
         }
-        numBars = kotlin.math.max(bar, numBars)
+        numBars = kotlin.math.max(realBar, numBars)
         highestTempo = kotlin.math.max(tempo.toDouble(), highestTempo)
         lowestTempo = kotlin.math.min(tempo.toDouble(), lowestTempo)
         return this
     }
 
     fun compile(): Program {
+        if (instructions.isEmpty()) {
+            return this
+        }
         compiledInstructions = mutableListOf()
         val instructions = instructions.toSortedMap().toList()
         var tempo = instructions[0].second.tempo.toDouble()
@@ -55,31 +61,34 @@ class Program {
         return this
     }
 
-    fun getData(): ByteArray {
-        var byteArray = byteArrayOf()
-        val instructions = instructions.toSortedMap().toList()
-        for (instruction in instructions) {
-            byteArray += instruction.first.toByte()
-            byteArray += instruction.second.tempo.toByte()
-            byteArray += (if (instruction.second.interpolate) 1 else 0).toByte()
-        }
-        return byteArray
-    }
-
-    fun setData(byteArray: ByteArray): Program {
-        compiledInstructions = mutableListOf()
-        instructions = mutableMapOf()
-        for (byte in byteArray.indices step 3) {
-            addOrChangeInstruction(byteArray[byte].toInt(), byteArray[byte + 1].toInt(), byteArray[byte + 2].toInt() == 1)
-        }
-        return this
-    }
-
     fun getInstruction(position: Int): Double {
         return compiledInstructions[position]
     }
 
     fun length(): Int {
         return compiledInstructions.size
+    }
+
+    fun clear() {
+        instructions.clear()
+        compiledInstructions.clear()
+        highestTempo = 0.0
+        lowestTempo = Double.MAX_VALUE
+        numBars = 0
+        name = ""
+    }
+
+    fun setGraph() : MutableList<DataPoint> {
+        val graphArray = mutableListOf<DataPoint>()
+        var tempo = 0
+        val instructions = instructions.toSortedMap().toList()
+        for (i in instructions) {
+            if (!i.second.interpolate) {
+                graphArray.add(DataPoint(i.first.toDouble(), tempo.toDouble()))
+            }
+            graphArray.add(DataPoint(i.first.toDouble(), i.second.tempo.toDouble()))
+            tempo = i.second.tempo
+        }
+        return graphArray
     }
 }
