@@ -23,6 +23,7 @@ const val MIN_TEMPO = 20f
 const val MAX_TEMPO = 500f
 const val STARTING_TEMPO = 130
 const val BEATS_PER_MEASURE = 4.0
+const val STARTING_QUARTER_VOLUME = .33F
 
 class MainActivity : AppCompatActivity() {
     private lateinit var mainActivity: ActivityMainBinding
@@ -78,7 +79,7 @@ class MainActivity : AppCompatActivity() {
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
-        mainActivity.QuarterVolume.progress = 100
+        mainActivity.QuarterVolume.progress = (100 * STARTING_QUARTER_VOLUME).toInt()
         mainActivity.TempoSeekbar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 if (fromUser) {

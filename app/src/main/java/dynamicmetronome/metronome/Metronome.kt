@@ -7,6 +7,7 @@ import com.jjoe64.graphview.GraphView
 import com.jjoe64.graphview.series.DataPoint
 import com.jjoe64.graphview.series.LineGraphSeries
 import dynamicmetronome.mainactivity.BEATS_PER_MEASURE
+import dynamicmetronome.mainactivity.STARTING_QUARTER_VOLUME
 import dynamicmetronome.mainactivity.STARTING_TEMPO
 import kotlin.system.measureNanoTime
 
@@ -26,7 +27,7 @@ class Metronome() : Runnable {
     var program = Program()  // Attached Program
     var playing = false  // is the metronome playing
     var tempo = STARTING_TEMPO  // current tempo of metronome
-    var volume = 1f  // volume of metronome
+    var volume = STARTING_QUARTER_VOLUME  // volume of metronome
 
     /**
      * Creates a Metronome with a specific sound and tempo.
