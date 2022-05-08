@@ -1,3 +1,3 @@
-package thadd.schelp.dynamicmetronome.gui
+package dynamicmetronome.gui
 
 data class ProgramRecyclerModel(val name: String = "ProgramName")

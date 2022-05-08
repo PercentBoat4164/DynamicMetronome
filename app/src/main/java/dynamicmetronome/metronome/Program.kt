@@ -1,7 +1,7 @@
-package thadd.schelp.dynamicmetronome.metronome
+package dynamicmetronome.metronome
 
 import com.jjoe64.graphview.series.DataPoint
-import thadd.schelp.dynamicmetronome.BEATS_PER_MEASURE
+import dynamicmetronome.mainactivity.BEATS_PER_MEASURE
 import java.io.Serializable
 
 /**

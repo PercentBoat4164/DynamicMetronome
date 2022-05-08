@@ -1,4 +1,4 @@
-package thadd.schelp.dynamicmetronome.gui
+package dynamicmetronome.gui
 
 import android.content.Context
 import android.view.LayoutInflater
@@ -8,9 +8,9 @@ import android.widget.Button
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import thadd.schelp.dynamicmetronome.R
-import thadd.schelp.dynamicmetronome.metronome.Metronome
-import thadd.schelp.dynamicmetronome.metronome.Program
+import dynamicmetronome.metronome.Metronome
+import dynamicmetronome.metronome.Program
+import dynamicmetronome.mainactivity.R
 import java.io.ObjectInputStream
 
 

@@ -1,6 +1,6 @@
-package thadd.schelp.dynamicmetronome.metronome
+package dynamicmetronome.metronome
 
-import thadd.schelp.dynamicmetronome.STARTING_TEMPO
+import dynamicmetronome.mainactivity.STARTING_TEMPO
 import java.io.Serializable
 
 class Instruction : Serializable{

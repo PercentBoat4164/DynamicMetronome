@@ -1,4 +1,4 @@
-package thadd.schelp.dynamicmetronome
+package dynamicmetronome.mainactivity
 
 import android.content.Context
 import android.content.pm.ActivityInfo
@@ -10,10 +10,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.jjoe64.graphview.series.DataPoint
 import com.jjoe64.graphview.series.LineGraphSeries
-import thadd.schelp.dynamicmetronome.databinding.*
-import thadd.schelp.dynamicmetronome.gui.CustomAdapter
-import thadd.schelp.dynamicmetronome.gui.ProgramRecyclerModel
-import thadd.schelp.dynamicmetronome.metronome.Metronome
+import dynamicmetronome.mainactivity.databinding.*
+import dynamicmetronome.gui.CustomAdapter
+import dynamicmetronome.gui.ProgramRecyclerModel
+import dynamicmetronome.metronome.Metronome
 import java.io.File
 import java.io.IOException
 import java.io.ObjectOutputStream

@@ -1,4 +1,4 @@
-package thadd.schelp.dynamicmetronome.metronome
+package dynamicmetronome.metronome
 
 import android.content.Context
 import android.graphics.Color
@@ -6,8 +6,8 @@ import android.media.SoundPool
 import com.jjoe64.graphview.GraphView
 import com.jjoe64.graphview.series.DataPoint
 import com.jjoe64.graphview.series.LineGraphSeries
-import thadd.schelp.dynamicmetronome.BEATS_PER_MEASURE
-import thadd.schelp.dynamicmetronome.STARTING_TEMPO
+import dynamicmetronome.mainactivity.BEATS_PER_MEASURE
+import dynamicmetronome.mainactivity.STARTING_TEMPO
 import kotlin.system.measureNanoTime
 
 /**
