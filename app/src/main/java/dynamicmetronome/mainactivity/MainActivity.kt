@@ -82,7 +82,7 @@ class MainActivity : AppCompatActivity() {
         mainActivity.TempoSeekbar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 if (fromUser) {
-                    mainMetronome.tempo = (progress * (MAX_TEMPO - MIN_TEMPO) / 100f + MIN_TEMPO).toInt()
+                    mainMetronome.tempo = (progress * (MAX_TEMPO - MIN_TEMPO) / 100F + MIN_TEMPO).toInt()
                     mainActivity.Tempo.value = mainMetronome.tempo
                 }
             }

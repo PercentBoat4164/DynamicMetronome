@@ -19,14 +19,14 @@ class Metronome() : Runnable {
     private var priority = 1
     private var thread = Thread(this)
     private var soundID = 0  // ID of sound resource
-    private var soundPool = SoundPool.Builder().build()  // sound pool used to play sounds
+    private var soundPool = SoundPool.Builder().setMaxStreams(10).build()  // sound pool used to play sounds
     private var playHead = 0  // playHead of program
     private var series = LineGraphSeries(mutableListOf(DataPoint(0.0, 0.0), DataPoint(0.0, 100.0)).toTypedArray())  // series used to update GraphView
     private var graph: GraphView? = null  // GraphView to display programs on
     var program = Program()  // Attached Program
     var playing = false  // is the metronome playing
     var tempo = STARTING_TEMPO  // current tempo of metronome
-    var volume = 100f  // volume of metronome
+    var volume = 1f  // volume of metronome
 
     /**
      * Creates a Metronome with a specific sound and tempo.
@@ -81,9 +81,10 @@ class Metronome() : Runnable {
 
     override fun run() {
         while (playing) {
+            volume = kotlin.math.min(volume, 1F)
             if (playHead < program.length()) {
                 Thread.sleep((program.getInstruction(playHead) - measureNanoTime {
-                    soundPool.play(soundID, volume, volume, playHead, 0, 1F)
+                    soundPool.play(soundID, volume, volume, playHead, 0, 2F)
                     graph?.removeSeries(series)
                     series = LineGraphSeries(mutableListOf(DataPoint(playHead.toDouble() / BEATS_PER_MEASURE, 0.0), DataPoint(playHead.toDouble() / BEATS_PER_MEASURE, 1 / program.getInstruction(playHead) * 60000)).toTypedArray())
                     series.color = Color.GREEN
@@ -99,7 +100,7 @@ class Metronome() : Runnable {
             }
             else {
                  Thread.sleep((60000F / tempo - measureNanoTime {
-                     soundPool.play(soundID, volume, volume, priority++, 0, 2F)
+                     soundPool.play(soundID, volume, volume, priority, 0, 2F)
                  } / 1000000F).toLong())
             }
         }
