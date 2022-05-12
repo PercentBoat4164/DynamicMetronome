@@ -82,10 +82,9 @@ class Metronome() : Runnable {
 
     override fun run() {
         while (playing) {
-            volume = kotlin.math.min(volume, 1F)
             if (playHead < program.length()) {
                 Thread.sleep((program.getInstruction(playHead) - measureNanoTime {
-                    soundPool.play(soundID, volume, volume, playHead, 0, 2F)
+                    soundPool.play(soundID, volume, volume, playHead, 0, 1F)
                     graph?.removeSeries(series)
                     series = LineGraphSeries(mutableListOf(DataPoint(playHead.toDouble() / BEATS_PER_MEASURE, 0.0), DataPoint(playHead.toDouble() / BEATS_PER_MEASURE, 1 / program.getInstruction(playHead) * 60000)).toTypedArray())
                     series.color = Color.GREEN
@@ -101,7 +100,7 @@ class Metronome() : Runnable {
             }
             else {
                  Thread.sleep((60000F / tempo - measureNanoTime {
-                     soundPool.play(soundID, volume, volume, priority, 0, 2F)
+                     soundPool.play(soundID, volume, volume, priority, 0, 1F)
                  } / 1000000F).toLong())
             }
         }

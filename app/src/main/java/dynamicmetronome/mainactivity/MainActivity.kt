@@ -42,7 +42,7 @@ class MainActivity : AppCompatActivity() {
         createPopup = CreatePopupBinding.inflate(layoutInflater)
         programEntry = ProgramEntryBinding.inflate(layoutInflater)
         setContentView(mainActivity.root)
-        mainMetronome = Metronome(createProgramActivity.graph, applicationContext, R.raw.beep)
+        mainMetronome = Metronome(createProgramActivity.graph, applicationContext, R.raw.metronome_sample)
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT  // @todo Find a way to make the orientation not break things.
         buildHomeScreenGUI()
         buildProgramsScreenGUI()
