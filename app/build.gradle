@@ -34,14 +34,6 @@ android {
             applicationIdSuffix ".debug"
             debuggable true
         }
-
-        staging {
-            initWith debug
-            manifestPlaceholders = [hostName:"internal.example.com"]
-            applicationIdSuffix ".debugStaging"
-            debuggable true
-        }
-
     }
     compileOptions {
         sourceCompatibility "1.8"

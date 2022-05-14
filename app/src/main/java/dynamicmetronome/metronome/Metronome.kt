@@ -34,16 +34,8 @@ class Metronome() : Runnable {
      * @param graph overrides the graph
      */
     constructor(graph: GraphView?, context: Context, sound: Int) : this() {
-        series.setAnimated(true)
         this.graph = graph
         soundID = soundPool.load(context, sound, Int.MAX_VALUE)
-    }
-
-    /**
-     * This default constructor ensures that the graph series will be animated.
-     */
-    init {
-        series.setAnimated(true)
     }
 
     /**
@@ -81,16 +73,16 @@ class Metronome() : Runnable {
     }
 
     override fun run() {
+//        series = LineGraphSeries(mutableListOf(DataPoint(playHead.toDouble() / BEATS_PER_MEASURE, 0.0), DataPoint(playHead.toDouble() / BEATS_PER_MEASURE, 1 / program.getInstruction(playHead) * 60000)).toTypedArray())
+        series.color = Color.GREEN
+        graph?.addSeries(series)
         while (playing) {
             if (playHead < program.length()) {
-                Thread.sleep((program.getInstruction(playHead) - measureNanoTime {
+                Thread.sleep(kotlin.math.max((program.getInstruction(playHead) - measureNanoTime {
                     soundPool.play(soundID, volume, volume, playHead, 0, 1F)
-                    graph?.removeSeries(series)
-                    series = LineGraphSeries(mutableListOf(DataPoint(playHead.toDouble() / BEATS_PER_MEASURE, 0.0), DataPoint(playHead.toDouble() / BEATS_PER_MEASURE, 1 / program.getInstruction(playHead) * 60000)).toTypedArray())
-                    series.color = Color.GREEN
-                    graph?.addSeries(series)
+                    series.resetData(mutableListOf(DataPoint(playHead.toDouble() / BEATS_PER_MEASURE, 0.0), DataPoint(playHead.toDouble() / BEATS_PER_MEASURE, 1 / program.getInstruction(playHead) * 60000)).toTypedArray())
                     ++playHead
-                } / 1000000F).toLong())
+                } / 1000000F).toLong(), 0))
             }
             else if (playHead == program.length() && program.instructions.isNotEmpty()) {
                 playing = false
@@ -99,9 +91,9 @@ class Metronome() : Runnable {
                 break
             }
             else {
-                 Thread.sleep((60000F / tempo - measureNanoTime {
+                 Thread.sleep(kotlin.math.max((60000F / tempo - measureNanoTime {
                      soundPool.play(soundID, volume, volume, priority, 0, 1F)
-                 } / 1000000F).toLong())
+                 } / 1000000F).toLong(), 0))
             }
         }
     }
