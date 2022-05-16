@@ -40,7 +40,7 @@ class CustomAdapter (private val modelList: ArrayList<ProgramRecyclerModel>, pri
             }
             modelList.removeAt(index)
             this.notifyItemRemoved(index)
-            applicationContext.deleteFile(holder.nameView.text.toString()).toString()
+            applicationContext.deleteFile(holder.nameView.text.toString() + ".met")
         }
         holder.play.setOnClickListener {
             if (!metronome.playing) {
