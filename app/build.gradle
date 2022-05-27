@@ -6,10 +6,10 @@ plugins {
 android {
     signingConfigs {
         release {
-            storeFile file('/home/sophia/Documents/Programming/Kotlin/Android/DynamicMetronome/keys/DynamicMetronome_LatestRelease.jks')
-            keyAlias 'Dynamic Metronome Latest Release'
-            storePassword 'DynMetRel'
-            keyPassword 'DynMetRel'
+            storeFile file('/home/sophia/Documents/Programming/Kotlin/Android/DynamicMetronome/keys/DynamicMetronomeLatestRelease.jks')
+            keyAlias 'dynamic metronome v0.0.1'
+            storePassword 'DynMet'
+            keyPassword 'DynMet'
         }
     }
     compileSdk 32
