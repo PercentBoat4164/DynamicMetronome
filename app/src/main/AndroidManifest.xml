@@ -6,9 +6,9 @@
 
     <application
         android:allowBackup="true"
-        android:icon="@drawable/logo_placeholder"
+        android:icon="@drawable/metronome_app"
         android:label="@string/app_name"
-        android:roundIcon="@drawable/logo_placeholder"
+        android:roundIcon="@drawable/metronome_app"
         android:supportsRtl="true"
         android:theme="@style/Theme.DynamicMetronome">
         <activity android:name=".MainActivity"
