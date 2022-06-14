@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">Dynamic Metronome</string>
-    <string name="app_version">1.0.0</string>
+    <string name="app_version">0.0.3</string>
     <string name="select_tempo">Double tap the number picker above to type in a tempo.</string>
     <string name="play">Play</string>
     <string name="quarter_volume">Quarter note volume</string>
@@ -8,7 +8,7 @@
     <string name="home_button">Home</string>
     <string name="create_new_program">Create new program</string>
     <string name="create_new_element">Create new element</string>
-    <string name="create_element_information">Fill in the following information then click \'Confirm\' to create a new program element.</string>
+    <string name="create_element_information">Fill in the following information then click \'Confirm\' to create a new node.</string>
     <string name="tempo">Tempo</string>
     <string name="confirm">Confirm</string>
     <string name="bar_number">Bar number</string>

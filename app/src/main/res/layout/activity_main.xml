@@ -5,81 +5,85 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    tools:context=".MainActivity" >
 
-    <NumberPicker
-        android:id="@+id/Tempo"
-        android:layout_width="@dimen/_320sdp"
-        android:layout_height="@dimen/_100sdp"
-        android:orientation="horizontal"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <TextView
-        android:id="@+id/textView"
-        android:layout_width="wrap_content"
+    <!--LinearLayout controlling tempo configuration UI elements-->
+    <LinearLayout
+        android:id="@+id/TempoControlLinearLayout"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/select_tempo"
-        android:textSize="@dimen/_13sdp"
-        app:layout_constraintBottom_toTopOf="@+id/TempoSeekbar"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/Tempo"
-        app:layout_constraintVertical_bias="0.392" />
+        android:orientation="vertical"
+        app:layout_constraintTop_toTopOf="parent" >
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/StartStopButton"
-        android:layout_width="@dimen/_103sdp"
-        android:layout_height="0dp"
-        android:layout_marginTop="@dimen/_40sdp"
-        android:clickable="true"
-        android:contentDescription="@string/play"
-        android:focusable="true"
-        app:layout_constraintEnd_toEndOf="@+id/QuarterPlaying"
-        app:layout_constraintTop_toBottomOf="@+id/QuarterPlaying"
-        app:srcCompat="@android:drawable/ic_media_play" />
+        <NumberPicker
+            android:id="@+id/TempoNumberPicker"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
 
-    <SeekBar
-        android:id="@+id/TempoSeekbar"
-        android:layout_width="@dimen/_320sdp"
-        android:layout_height="@dimen/_20sdp"
-        android:layout_marginTop="@dimen/_24sdp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/Tempo" />
+        <TextView
+            android:id="@+id/TempoSelectionInstructions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/select_tempo"
+            android:textAlignment="center"
+            android:textSize="16sp"
+            app:layout_constraintBottom_toTopOf="@+id/TempoSeekbar"
+            app:layout_constraintTop_toBottomOf="@+id/TempoNumberPicker" />
 
-    <SeekBar
-        android:id="@+id/QuarterVolume"
-        android:layout_width="@dimen/_160sdp"
-        android:layout_height="@dimen/_25sdp"
-        app:layout_constraintBottom_toBottomOf="@+id/QuarterPlaying"
-        app:layout_constraintEnd_toStartOf="@+id/QuarterPlaying"
-        app:layout_constraintHorizontal_bias="1.0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/QuarterPlaying"
-        app:layout_constraintVertical_bias="0.0" />
+        <SeekBar
+            android:id="@+id/TempoSeekbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toBottomOf="@+id/TempoSelectionInstructions" />
+    </LinearLayout>
 
-    <Switch
-        android:id="@+id/QuarterPlaying"
-        android:layout_width="@dimen/_158sdp"
-        android:layout_height="@dimen/_25sdp"
-        android:layout_marginTop="@dimen/_300sdp"
-        android:text="@string/quarter_volume"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/TempoSeekbar"
-        tools:ignore="UseSwitchCompatOrMaterialXml" />
-
-    <Button
-        android:id="@+id/ProgramsButton"
-        android:layout_width="wrap_content"
+    <!--LinearLayout Controlling volume sliders and mute switches-->
+    <LinearLayout
+        android:id="@+id/VolumeControlLinearLayout"
+        app:layout_constraintTop_toBottomOf="@+id/TempoControlLinearLayout"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/programs_button"
-        app:layout_constraintBottom_toBottomOf="@+id/StartStopButton"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/StartStopButton"
-        app:layout_constraintVertical_bias="0.0" />
+        android:weightSum="2" >
 
+        <SeekBar
+            android:id="@+id/QuarterVolume"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            app:layout_constraintBottom_toBottomOf="@+id/QuarterPlaying"
+            app:layout_constraintTop_toTopOf="@+id/QuarterPlaying" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/QuarterPlaying"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:text="@string/quarter_volume" />
+    </LinearLayout>
+
+    <!--Constraint controlling the action buttons-->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/ButtonsControlLinearLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent" >
+
+        <Button
+            android:id="@+id/ProgramsButton"
+            android:text="@string/programs_button"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@id/StartStopButton"
+            app:layout_constraintBottom_toBottomOf="@id/StartStopButton" />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/StartStopButton"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:contentDescription="@string/play"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@android:drawable/ic_media_play"/>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -40,11 +40,11 @@ class CustomAdapter (private val modelList: ArrayList<ProgramRecyclerModel>, pri
             }
             modelList.removeAt(index)
             this.notifyItemRemoved(index)
-            applicationContext.deleteFile(holder.nameView.text.toString()).toString()
+            applicationContext.deleteFile(holder.nameView.text.toString() + ".met")
         }
         holder.play.setOnClickListener {
             if (!metronome.playing) {
-                val file = ObjectInputStream(applicationContext.openFileInput(holder.nameView.text.toString()))
+                val file = ObjectInputStream(applicationContext.openFileInput(holder.nameView.text.toString() + ".met"))
                 metronome.program = (file.readObject() as Program)
                 metronome.program.name = holder.nameView.text.toString()
                 metronome.executeProgram()

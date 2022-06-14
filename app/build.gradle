@@ -6,10 +6,10 @@ plugins {
 android {
     signingConfigs {
         release {
-            storeFile file('/home/sophia/Documents/Programming/Kotlin/Android/DynamicMetronome/keys/DynamicMetronome_LatestRelease.jks')
-            keyAlias 'Dynamic Metronome Latest Release'
-            storePassword 'DynMetRel'
-            keyPassword 'DynMetRel'
+            storeFile file('/home/sophia/Documents/Programming/Kotlin/Android/DynamicMetronome/keys/DynamicMetronomeLatestRelease.jks')
+            keyAlias 'dynamic metronome v0.0.1'
+            storePassword 'DynMet'
+            keyPassword 'DynMet'
         }
     }
     compileSdk 32
@@ -19,8 +19,8 @@ android {
         applicationId "dynamicmetronome.mainactivity"
         minSdkVersion 21
         targetSdkVersion 32
-        versionCode 1
-        versionName "0.0.1"
+        versionCode 3
+        versionName "0.0.3"
     }
 
     buildTypes {
@@ -34,14 +34,6 @@ android {
             applicationIdSuffix ".debug"
             debuggable true
         }
-
-        staging {
-            initWith debug
-            manifestPlaceholders = [hostName:"internal.example.com"]
-            applicationIdSuffix ".debugStaging"
-            debuggable true
-        }
-
     }
     compileOptions {
         sourceCompatibility "1.8"
@@ -66,7 +58,7 @@ dependencies {
     implementation 'androidx.core:core-ktx:1.7.0'
     implementation 'androidx.appcompat:appcompat:1.4.1'
     implementation 'com.google.android.material:material:1.6.0'
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.3'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'com.intuit.sdp:sdp-android:1.0.6'
     implementation 'com.jjoe64:graphview:4.2.2'
     implementation 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2'
