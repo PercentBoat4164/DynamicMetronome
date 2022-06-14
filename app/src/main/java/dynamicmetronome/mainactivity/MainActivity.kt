@@ -237,4 +237,10 @@ class MainActivity : AppCompatActivity() {
             mainMetronome.formatGraph()
         }
     }
+
+    companion object {
+        init {
+            System.loadLibrary("soundPlayer")
+        }
+    }
 }
