@@ -128,7 +128,7 @@ class Metronome (
 
     fun updateGraph() {
         graph?.removeAllSeries()
-        graph?.addSeries(series)
+        if (program.instructions.isNotEmpty()) graph?.addSeries(series)
         graph?.addSeries(LineGraphSeries(program.setGraph().toTypedArray()))
         formatGraph()
     }
