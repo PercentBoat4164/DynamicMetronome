@@ -1,12 +1,13 @@
 package dynamicmetronome.metronome
 
-import dynamicmetronome.mainactivity.STARTING_TEMPO
+import dynamicmetronome.activities.MainActivity
 import java.io.Serializable
 
-class Instruction : Serializable{
-    var tempo = STARTING_TEMPO
-    var interval = (60000F / tempo).toLong()
-    var interpolate = false
+class Instruction(
+    var tempo: Int = MainActivity.STARTING_TEMPO,
+    var interpolate: Boolean = false,
+    private var interval: Long = (60000F / tempo).toLong(),
+) : Serializable {
 
     fun setTempo(newTempo: Int) : Instruction {
         tempo = newTempo

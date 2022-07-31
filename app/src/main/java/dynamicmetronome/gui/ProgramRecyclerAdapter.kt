@@ -8,18 +8,23 @@ import android.widget.Button
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import dynamicmetronome.activities.R
 import dynamicmetronome.metronome.Metronome
 import dynamicmetronome.metronome.Program
-import dynamicmetronome.mainactivity.R
 import java.io.ObjectInputStream
 
 
 
-class CustomAdapter (private val modelList: ArrayList<ProgramRecyclerModel>, private val applicationContext: Context, private var metronome: Metronome) : RecyclerView.Adapter<CustomAdapter.ViewHolder>() {
+class ProgramRecyclerAdapter (
+    private val modelList: ArrayList<ProgramRecyclerModel>,
+    private val applicationContext: Context,
+    private var metronome: Metronome
+) : RecyclerView.Adapter<ProgramRecyclerAdapter.ViewHolder>() {
+
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val nameView: TextView = this.itemView.findViewById(R.id.ProgramNameView)
-        val delete: Button = this.itemView.findViewById(R.id.Delete)
-        val play: FloatingActionButton = this.itemView.findViewById(R.id.StartProgram)
+        val nameView: TextView = itemView.findViewById(R.id.ProgramNameView)
+        val delete: Button = itemView.findViewById(R.id.Delete)
+        val play: FloatingActionButton = itemView.findViewById(R.id.StartProgram)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -45,7 +50,7 @@ class CustomAdapter (private val modelList: ArrayList<ProgramRecyclerModel>, pri
         holder.play.setOnClickListener {
             if (!metronome.playing) {
                 val file = ObjectInputStream(applicationContext.openFileInput(holder.nameView.text.toString() + ".met"))
-                metronome.program = (file.readObject() as Program)
+                metronome.program = file.readObject() as Program
                 metronome.program.name = holder.nameView.text.toString()
                 metronome.executeProgram()
             }

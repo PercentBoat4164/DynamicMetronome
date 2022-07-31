@@ -1,7 +1,7 @@
 package dynamicmetronome.metronome
 
 import com.jjoe64.graphview.series.DataPoint
-import dynamicmetronome.mainactivity.BEATS_PER_MEASURE
+import dynamicmetronome.activities.MainActivity
 import java.io.Serializable
 
 /**
@@ -9,15 +9,15 @@ import java.io.Serializable
  *
  * Contains a list of instructions which can be parsed by a Metronome to simulate accelerandos, or hold the tempo steady. Instructions can be added, changed, or removed. Programs must be compile before they can be executed by a Metronome.
  */
-class Program : Serializable {
-    var name: String = ""
+class Program(
     // list of compiled instructions. These take the form of a Long containing the number of milliseconds to wait between this beat and the next one. When time signatures are added, a new instruction format will be needed.
-    private var compiledInstructions = mutableListOf<Double>()
-    var highestTempo = 2.0
-    var lowestTempo = Double.MAX_VALUE
-    var numBars = 0
-    var instructions = mutableMapOf<Int, Instruction>() // a hash table of bar numbers to instructions.
-
+    private var compiledInstructions: MutableList<Double> = mutableListOf(),
+    var highestTempo: Double = 2.0,
+    var lowestTempo: Double = Double.MAX_VALUE,
+    var numBars: Int = 0,
+    var instructions: MutableMap<Int, Instruction> = mutableMapOf(),
+    var name: String = ""
+) : Serializable {
 
     fun addOrChangeInstruction(bar: Int, tempo: Int, interpolate: Boolean): Program {
         val realBar = bar.coerceAtLeast(0)
@@ -43,9 +43,9 @@ class Program : Serializable {
         for (instruction in instructions.indices) {
             tempo = instructions[instruction].second.tempo.toDouble()
             try {
-                val slope = (instructions[instruction + 1].second.tempo - instructions[instruction].second.tempo) / (BEATS_PER_MEASURE * (instructions[instruction + 1].first - instructions[instruction].first))
+                val slope = (instructions[instruction + 1].second.tempo - instructions[instruction].second.tempo) / (MainActivity.BEATS_PER_MEASURE * (instructions[instruction + 1].first - instructions[instruction].first))
                 for (barNumber in (instructions[instruction].first) until instructions[instruction + 1].first) {
-                    for (beatNumber in 0 until BEATS_PER_MEASURE.toInt()) {
+                    for (beatNumber in 0 until MainActivity.BEATS_PER_MEASURE.toInt()) {
                         compiledInstructions.add(60000.0 / tempo)
                         if (instructions[instruction + 1].second.interpolate) {
                             tempo += slope
