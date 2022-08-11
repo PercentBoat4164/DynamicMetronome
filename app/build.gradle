@@ -25,7 +25,8 @@ android {
         versionName "0.0.3"
         externalNativeBuild {
             cmake {
-                cppFlags ''
+                path file('src/main/cpp/CMakeLists.txt')
+                targets += listOf("soundPlayer")
             }
         }
     }
@@ -59,12 +60,6 @@ android {
     }
     ndkVersion '21.4.7075529'
     namespace 'dynamicmetronome.activities'
-    externalNativeBuild {
-        cmake {
-            path file('src/main/cpp/CMakeLists.txt')
-            version '3.18.1'
-        }
-    }
 }
 
 dependencies {
