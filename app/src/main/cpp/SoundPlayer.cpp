@@ -1,3 +1,4 @@
+#include <jni.h>
 #include "SoundPlayer.hpp"
 
 SoundPlayer::SoundPlayer() {
@@ -25,8 +26,7 @@ SoundPlayer::SoundPlayer() {
     }
 }
 
-oboe::DataCallbackResult
-SoundPlayer::onAudioReady(oboe::AudioStream *audioStream, void *audioData, int32_t numFrames) {
+oboe::DataCallbackResult SoundPlayer::onAudioReady(oboe::AudioStream *audioStream, void *audioData, int32_t numFrames) {
     printf("%dms to finish with latency of %fms", numFrames / audioStream->getSampleRate(), stream->calculateLatencyMillis().value());
     stream->write(audioData, numFrames, oboe::kDefaultTimeoutNanos);
     return oboe::DataCallbackResult::Continue;
@@ -35,4 +35,8 @@ SoundPlayer::onAudioReady(oboe::AudioStream *audioStream, void *audioData, int32
 SoundPlayer::~SoundPlayer() {
     stream->flush();
     stream->close();
+}
+
+extern "C" JNIEXPORT jstring JNICALL Java_dynamicmetronome_activities_MainActivity_attempt(JNIEnv *env, jobject thiz) {
+    return env->NewStringUTF("Hello World!");
 }

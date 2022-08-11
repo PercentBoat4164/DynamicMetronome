@@ -1,8 +1,10 @@
 package dynamicmetronome.activities
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.os.Bundle
+import android.util.Log
 import android.widget.CompoundButton
 import android.widget.NumberPicker
 import android.widget.SeekBar
@@ -16,7 +18,9 @@ lateinit var mainMetronome: Metronome  /**@todo Find a better way to do this.*/
 class MainActivity : AppCompatActivity() {
     lateinit var mainActivity: MainActivityBinding
 
+    @SuppressLint("SourceLockedOrientationActivity")
     override fun onCreate(savedInstanceState: Bundle?) {
+        Log.d("----------", attempt())
         super.onCreate(savedInstanceState)
 
         mainActivity = DataBindingUtil.setContentView(this, R.layout.main_activity)
@@ -73,6 +77,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private external fun attempt(): String
+
     companion object {
         const val MIN_TEMPO = 20f
         const val MAX_TEMPO = 500f
@@ -81,7 +87,7 @@ class MainActivity : AppCompatActivity() {
         const val STARTING_QUARTER_VOLUME = .33F
 
         init {
-//            System.loadLibrary("soundPlayer")
+            System.loadLibrary("soundPlayer")
         }
     }
 }

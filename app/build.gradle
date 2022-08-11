@@ -6,6 +6,8 @@ plugins {
 
 android {
     dataBinding.enabled = true
+    compileSdk 33
+
     signingConfigs {
         release {
             storeFile file('/home/sophia/Documents/Programming/Kotlin/Android/DynamicMetronome/keys/DynamicMetronomeLatestRelease.jks')
@@ -14,18 +16,16 @@ android {
             keyPassword 'DynMet'
         }
     }
-    compileSdk 33
-    buildToolsVersion '33.0.0'
 
     defaultConfig {
         applicationId "dynamicmetronome.mainactivity"
-        minSdkVersion 21
+        minSdk 16
         targetSdkVersion 33
         versionCode 3
         versionName "0.0.3"
         externalNativeBuild {
             cmake {
-                cppFlags ''
+                cppFlags '-std=c++17'
             }
         }
     }
@@ -42,29 +42,33 @@ android {
             debuggable true
         }
     }
+
     compileOptions {
-        sourceCompatibility "1.8"
-        targetCompatibility "1.8"
-    }
-    kotlinOptions {
-        jvmTarget = '1.8'
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 
-    buildFeatures {
-        viewBinding true
+    kotlinOptions {
+        jvmTarget = "1.8"
     }
-    dependenciesInfo {
-        includeInApk false
-        includeInBundle false
-    }
-    ndkVersion '25.0.8775105'
-    namespace 'dynamicmetronome.activities'
+
     externalNativeBuild {
         cmake {
             path file('src/main/cpp/CMakeLists.txt')
             version '3.22.1'
         }
     }
+
+    buildFeatures {
+        viewBinding true
+    }
+
+    dependenciesInfo {
+        includeInApk false
+        includeInBundle false
+    }
+    ndkVersion '25.0.8775105'
+    buildToolsVersion '33.0.0'
 }
 
 dependencies {
