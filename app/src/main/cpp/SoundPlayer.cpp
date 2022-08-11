@@ -1,7 +1,5 @@
 #include "SoundPlayer.hpp"
 
-#include <oboe/Oboe.h>
-
 SoundPlayer::SoundPlayer() {
     oboe::AudioStreamBuilder builder;
 
@@ -27,7 +25,8 @@ SoundPlayer::SoundPlayer() {
     }
 }
 
-oboe::DataCallbackResult SoundPlayer::onAudioReady(oboe::AudioStream *audioStream, void *audioData, int32_t numFrames) {
+oboe::DataCallbackResult
+SoundPlayer::onAudioReady(oboe::AudioStream *audioStream, void *audioData, int32_t numFrames) {
     printf("%dms to finish with latency of %fms", numFrames / audioStream->getSampleRate(), stream->calculateLatencyMillis().value());
     stream->write(audioData, numFrames, oboe::kDefaultTimeoutNanos);
     return oboe::DataCallbackResult::Continue;
