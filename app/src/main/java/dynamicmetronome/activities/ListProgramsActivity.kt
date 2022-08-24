@@ -20,7 +20,7 @@ class ListProgramsActivity : Activity() {
 
         programsActivity.HomeButton.setOnClickListener{
             mainMetronome.stop()
-            mainMetronome.program.clear()
+            mainMetronome.getProgram().clear()
             finish()
         }
         programsActivity.NewProgramButton.setOnClickListener{

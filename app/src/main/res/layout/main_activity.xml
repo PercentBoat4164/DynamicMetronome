@@ -30,7 +30,8 @@
                 android:textAlignment="center"
                 android:textSize="16sp"
                 app:layout_constraintBottom_toTopOf="@+id/TempoSeekbar"
-                app:layout_constraintTop_toBottomOf="@+id/TempoNumberPicker" />
+                app:layout_constraintTop_toBottomOf="@+id/TempoNumberPicker"
+                android:gravity="center_horizontal" />
 
             <SeekBar
                 android:id="@+id/TempoSeekbar"
@@ -39,7 +40,7 @@
                 app:layout_constraintTop_toBottomOf="@+id/TempoSelectionInstructions" />
         </LinearLayout>
 
-        <!--LinearLayout Controlling volume sliders and mute switches-->
+        <!--LinearLayout Controlling m_volume sliders and mute switches-->
         <LinearLayout
             android:id="@+id/VolumeControlLinearLayout"
             app:layout_constraintTop_toBottomOf="@+id/TempoControlLinearLayout"

@@ -48,15 +48,8 @@ class ProgramRecyclerAdapter (
             applicationContext.deleteFile(holder.nameView.text.toString() + ".met")
         }
         holder.play.setOnClickListener {
-            if (!metronome.playing) {
-                val file = ObjectInputStream(applicationContext.openFileInput(holder.nameView.text.toString() + ".met"))
-                metronome.program = file.readObject() as Program
-                metronome.program.name = holder.nameView.text.toString()
-                metronome.executeProgram()
-            }
-            else {
-                metronome.stop()
-            }
+            metronome.loadProgram(holder.nameView.text.toString() + ".met")
+            metronome.togglePlaying()
         }
     }
 

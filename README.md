@@ -13,6 +13,8 @@ Dynamic Metronome is an Android metronome application that allows for easy progr
   - [ ] Make the number picker on the home-screen horizontal
   - [ ] Add support for sound profiles (readable from files perhaps)
   - [ ] Add support for horizontal viewing
+  - [ ] +n bpm on home screen
+  - [ ] Randomize tempo option
 - [ ] Add support for musical phenomenon in programs and by default
   - [x] Tempo
   - [ ] Time signatures
@@ -21,4 +23,4 @@ Dynamic Metronome is an Android metronome application that allows for easy progr
   - [ ] Option for 8-and-in
   - [ ] Moving sections of the program
   - [ ] Copying sections of the program
-  - [ ] Copying sections of other programs
+  - [ ] Copying sections of other program

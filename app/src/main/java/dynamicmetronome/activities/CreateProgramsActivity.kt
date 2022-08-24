@@ -26,14 +26,13 @@ class CreateProgramsActivity : Activity() {
         editorPopup = DataBindingUtil.setContentView(this, R.layout.editor_popup)
         createProgramActivity = DataBindingUtil.setContentView(this, R.layout.create_programs_activity)
 
-        mainMetronome.graph = createProgramActivity.Graph
+//        mainMetronome.graph = createProgramActivity.Graph
 
-        if (mainMetronome.program.name.isNotEmpty()) {
-            createProgramActivity.ProgramName.setText(mainMetronome.program.name)
-        }
+        val programName = mainMetronome.getProgram().getName();
+        if (programName.isNotEmpty()) createProgramActivity.ProgramName.setText(programName)
 
         // Set up the graph
-        mainMetronome.updateGraph()
+//        mainMetronome.updateGraph()
 
         // Set up the new element button's actions
         createProgramActivity.NewElementButton.setOnClickListener{
@@ -47,7 +46,7 @@ class CreateProgramsActivity : Activity() {
             if (createProgramActivity.ProgramName.text.toString() != "") {
                 try {
                     val file = ObjectOutputStream(applicationContext.openFileOutput(createProgramActivity.ProgramName.text.toString() + ".met", Context.MODE_PRIVATE))
-                    file.writeObject(mainMetronome.program)
+                    file.writeObject(mainMetronome.getProgram().serialize())
                     file.close()
                 } catch (e: IOException) {
                     Toast.makeText(applicationContext, "Failed to save file!", Toast.LENGTH_SHORT).show()
@@ -58,12 +57,7 @@ class CreateProgramsActivity : Activity() {
 
         createProgramActivity.ExecuteProgram.setOnClickListener{
             // Compile and execute the program on the main metronome
-            if (!mainMetronome.playing) {
-                mainMetronome.executeProgram()
-            }
-            else {
-                mainMetronome.stop()
-            }
+            mainMetronome.togglePlaying();
         }
 
         createProgramActivity.CancelButton.setOnClickListener{
@@ -73,44 +67,43 @@ class CreateProgramsActivity : Activity() {
         /** Popup window initialization*/
         editorPopup.ConfirmButton.setOnClickListener {
             try {
-                if (mainMetronome.program.instructions.isEmpty()) {
-                    mainMetronome.program.addOrChangeInstruction(0, Integer.parseInt(editorPopup.TempoInputField.text.toString()), false)
+                if (programName.isEmpty()) {
+                    mainMetronome.getProgram().addOrChangeInstruction(0L, Integer.parseInt(editorPopup.TempoInputField.text.toString()), false)
                     editorPopup.Interpolate.isChecked = false
                 }
                 if (Integer.parseInt(editorPopup.BarNumberInputField.text.toString()) >= 0) {
-                    mainMetronome.program.addOrChangeInstruction(Integer.parseInt(editorPopup.BarNumberInputField.text.toString()), Integer.parseInt(editorPopup.TempoInputField.text.toString()), editorPopup.Interpolate.isChecked)
+                    mainMetronome.getProgram().addOrChangeInstruction(editorPopup.BarNumberInputField.text.toString().toLong(), Integer.parseInt(editorPopup.TempoInputField.text.toString()), editorPopup.Interpolate.isChecked)
                 }
             } catch (e: NumberFormatException) {
                 Toast.makeText(this, "Some inputs are missing.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             popup.dismiss()
-            createProgramActivity.Graph.removeAllSeries()
-            val graphArray = mutableListOf<DataPoint>()
-            var tempo = 0
-            val instructions = mainMetronome.program.instructions.toSortedMap().toList()
-            for (i in instructions) {
-                if (!i.second.interpolate) {
-                    graphArray.add(DataPoint(i.first.toDouble(), tempo.toDouble()))
-                }
-                graphArray.add(DataPoint(i.first.toDouble(), i.second.tempo.toDouble()))
-                tempo = i.second.tempo
-            }
-            createProgramActivity.Graph.addSeries(LineGraphSeries(graphArray.toTypedArray()))
-            if (mainMetronome.program.numBars != 0) {
-                createProgramActivity.Graph.viewport.setMaxX(mainMetronome.program.numBars.toDouble())
-            }
-            mainMetronome.formatGraph()
+            // Rebuild the graph
+//            createProgramActivity.Graph.removeAllSeries()
+//            val graphArray = mutableListOf<DataPoint>()
+//            var tempo = 0
+//            val instructions = mainMetronome.program.instructions.toSortedMap().toList()
+//            for (i in instructions) {
+//                if (!i.second.interpolate) {
+//                    graphArray.add(DataPoint(i.first.toDouble(), tempo.toDouble()))
+//                }
+//                graphArray.add(DataPoint(i.first.toDouble(), i.second.tempo.toDouble()))
+//                tempo = i.second.tempo
+//            }
+//            createProgramActivity.Graph.addSeries(LineGraphSeries(graphArray.toTypedArray()))
+//            if (mainMetronome.getProgram().length() != 0L) {
+//                createProgramActivity.Graph.viewport.setMaxX(mainMetronome.getProgram().length().toDouble())
+//            }
+//            mainMetronome.formatGraph()
 
-            // close popup
-            editorPopup.Interpolate.isChecked = false
         }
     }
 
     private fun exit() {
         mainMetronome.stop()
-        mainMetronome.program.clear()
-        mainMetronome.graph = null
+        mainMetronome.getProgram().clear()
+//        mainMetronome.graph = null
         createProgramActivity.Graph.removeAllSeries()
         createProgramActivity.ProgramName.setText("")
         editorPopup.BarNumberInputField.setText("")

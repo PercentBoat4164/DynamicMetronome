@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.os.Bundle
-import android.util.Log
 import android.widget.CompoundButton
 import android.widget.NumberPicker
 import android.widget.SeekBar
@@ -13,18 +12,16 @@ import androidx.databinding.DataBindingUtil
 import dynamicmetronome.activities.databinding.MainActivityBinding
 import dynamicmetronome.metronome.Metronome
 
-lateinit var mainMetronome: Metronome  /**@todo Find a better way to do this.*/
+val mainMetronome: Metronome = Metronome() /**@todo Find a better way to do this.*/
 
 class MainActivity : AppCompatActivity() {
     lateinit var mainActivity: MainActivityBinding
 
     @SuppressLint("SourceLockedOrientationActivity")
     override fun onCreate(savedInstanceState: Bundle?) {
-        Log.d("----------", attempt())
         super.onCreate(savedInstanceState)
 
         mainActivity = DataBindingUtil.setContentView(this, R.layout.main_activity)
-        mainMetronome = Metronome(null, applicationContext, R.raw.metronome_sample)
 
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT  // @todo Find a way to make the orientation not break things.
 
@@ -35,16 +32,16 @@ class MainActivity : AppCompatActivity() {
         mainActivity.TempoNumberPicker.wrapSelectorWheel = false
         mainActivity.TempoNumberPicker.displayedValues = Array(MAX_TEMPO.toInt()){(it + MIN_TEMPO.toInt()).toString()}
         mainActivity.TempoNumberPicker.setOnValueChangedListener { _: NumberPicker, _: Int, tempo: Int ->
-            mainMetronome.tempo = tempo
+            mainMetronome.setTempo(tempo)
             mainActivity.TempoSeekbar.progress = (tempo.toFloat() / (MAX_TEMPO - MIN_TEMPO) * 100).toInt()
         }
         mainActivity.QuarterPlaying.isChecked = true
         mainActivity.QuarterPlaying.setOnCheckedChangeListener{
                 _: CompoundButton, isChecked: Boolean ->
             if (!isChecked) {
-                mainMetronome.volume = 0F
+                mainMetronome.setVolume(0.0)
             } else {
-                mainMetronome.volume = mainActivity.QuarterVolume.progress / 100F
+                mainMetronome.setVolume(mainActivity.QuarterVolume.progress / 100.0)
             }
         }
         mainActivity.StartStopButton.setOnClickListener{
@@ -53,18 +50,23 @@ class MainActivity : AppCompatActivity() {
         mainActivity.QuarterVolume.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
                 if (mainActivity.QuarterPlaying.isChecked) {
-                    mainMetronome.volume = progress / 100F
+                    mainMetronome.setVolume(progress / 100.0)
                 }
             }
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {
+                if (mainActivity.QuarterPlaying.isChecked) {
+                    mainMetronome.setVolume(seekBar!!.progress / 100.0)
+                }
+            }
         })
         mainActivity.QuarterVolume.progress = (100 * STARTING_QUARTER_VOLUME).toInt()
         mainActivity.TempoSeekbar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 if (fromUser) {
-                    mainMetronome.tempo = (progress * (MAX_TEMPO - MIN_TEMPO) / 100F + MIN_TEMPO).toInt()
-                    mainActivity.TempoNumberPicker.value = mainMetronome.tempo
+                    val tempo = (progress * (MAX_TEMPO - MIN_TEMPO) / 100F + MIN_TEMPO).toULong()
+                    mainMetronome.setTempo(tempo.toInt())
+                    mainActivity.TempoNumberPicker.value = tempo.toInt()
                 }
             }
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
@@ -77,17 +79,15 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private external fun attempt(): String
-
     companion object {
-        const val MIN_TEMPO = 20f
-        const val MAX_TEMPO = 500f
+        const val MIN_TEMPO = 20.0
+        const val MAX_TEMPO = 500.0
         const val STARTING_TEMPO = 130
         const val BEATS_PER_MEASURE = 4.0
-        const val STARTING_QUARTER_VOLUME = .33F
+        const val STARTING_QUARTER_VOLUME = .33
 
         init {
-            System.loadLibrary("soundPlayer")
+            System.loadLibrary("metronome")
         }
     }
 }
