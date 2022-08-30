@@ -15,8 +15,7 @@ void Program::clear() {
 }
 
 void Program::addOrChangeInstruction(size_t t_bar, uint64_t t_tempo, bool t_interpolate) {
-    if (m_instructions.empty()) m_instructions[0] = Instruction{t_tempo, 4, 4, t_interpolate, 0};
-    m_instructions[std::max(t_bar, size_t(0))] = Instruction{t_tempo, 4, 4, t_interpolate, std::max(t_bar, size_t(0))};
+    m_instructions[std::max(t_bar, size_t(1))] = Instruction{t_tempo, 4, 4, t_interpolate, std::max(t_bar, size_t(1))};
     m_highestTempo = std::max(m_highestTempo, t_tempo);
     m_lowestTempo = std::min(m_lowestTempo, t_tempo);
 }

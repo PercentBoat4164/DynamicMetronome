@@ -123,9 +123,15 @@ extern "C" JNIEXPORT jdoubleArray JNICALL Java_dynamicmetronome_metronome_Metron
     std::map<size_t, Instruction> instructions{*reinterpret_cast<Metronome *>(handle)->m_program.getInstructions()};
     std::vector<double> *result{new std::vector<double>};
     result->reserve(instructions.size() * 2);
+    size_t previousBar{0};
     for (const auto &[bar, instruction] : instructions) {
+        if (!instruction.getInterpolation() && bar != 0) {
+            result->push_back(instruction.getTempo());
+            result->push_back(previousBar);
+        }
         result->push_back(instruction.getTempo());
         result->push_back(bar);
+        previousBar = bar;
     }
     jdoubleArray output{env->NewDoubleArray((int) result->size())};
     env->SetDoubleArrayRegion(output, 0, (int) result->size(), result->data());

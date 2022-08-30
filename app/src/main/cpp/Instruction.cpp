@@ -44,7 +44,7 @@ std::istream &operator>>(std::istream &is, Instruction &instruction) {
     return is;
 }
 
-bool Instruction::getInterpolation() {
+bool Instruction::getInterpolation() const {
     return m_interpolate;
 }
 

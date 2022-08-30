@@ -18,7 +18,7 @@ public:
 
     uint64_t getNotesPerMeasure() const;
 
-    bool getInterpolation();
+    bool getInterpolation() const;
 
 public:
     friend std::ostream &operator<<(std::ostream &, const Instruction &);
