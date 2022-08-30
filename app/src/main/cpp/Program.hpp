@@ -11,8 +11,8 @@
 
 class Program {
 private:
-    uint64_t m_highestTempo;
-    uint64_t m_lowestTempo;
+    uint64_t m_highestTempo{0};
+    uint64_t m_lowestTempo{UINT64_MAX};
     size_t m_numBars;
     std::map<size_t, Instruction> m_instructions;
     std::string m_name;
@@ -26,6 +26,8 @@ public:
     Program *deserialize(std::istream &);
     std::string getName();
     std::map<size_t, Instruction> *getInstructions();
+    uint64_t getHighestTempo() const;
+    uint64_t getLowestTempo() const;
 
     friend std::ostream &operator<<(std::ostream &os, const Program &program);
     friend std::istream &operator>>(std::istream &os, Program &program);

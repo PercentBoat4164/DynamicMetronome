@@ -13,8 +13,6 @@ public:
     Metronome();
     ~Metronome();
 
-    void operator=(const Metronome &) = delete;
-
     void start();
     void stop();
     void executeProgram();

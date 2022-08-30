@@ -28,7 +28,7 @@ class CreateProgramsActivity : Activity() {
 
 //        mainMetronome.graph = createProgramActivity.Graph
 
-        val programName = mainMetronome.getProgram().getName();
+        val programName = mainMetronome.getProgram().getName()
         if (programName.isNotEmpty()) createProgramActivity.ProgramName.setText(programName)
 
         // Set up the graph
@@ -57,7 +57,7 @@ class CreateProgramsActivity : Activity() {
 
         createProgramActivity.ExecuteProgram.setOnClickListener{
             // Compile and execute the program on the main metronome
-            mainMetronome.togglePlaying();
+            mainMetronome.togglePlaying()
         }
 
         createProgramActivity.CancelButton.setOnClickListener{
@@ -67,43 +67,20 @@ class CreateProgramsActivity : Activity() {
         /** Popup window initialization*/
         editorPopup.ConfirmButton.setOnClickListener {
             try {
-                if (programName.isEmpty()) {
-                    mainMetronome.getProgram().addOrChangeInstruction(0L, Integer.parseInt(editorPopup.TempoInputField.text.toString()), false)
-                    editorPopup.Interpolate.isChecked = false
-                }
-                if (Integer.parseInt(editorPopup.BarNumberInputField.text.toString()) >= 0) {
-                    mainMetronome.getProgram().addOrChangeInstruction(editorPopup.BarNumberInputField.text.toString().toLong(), Integer.parseInt(editorPopup.TempoInputField.text.toString()), editorPopup.Interpolate.isChecked)
-                }
+                mainMetronome.getProgram().addOrChangeInstruction(editorPopup.BarNumberInputField.text.toString().toLong(), Integer.parseInt(editorPopup.TempoInputField.text.toString()), editorPopup.Interpolate.isChecked)
             } catch (e: NumberFormatException) {
                 Toast.makeText(this, "Some inputs are missing.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             popup.dismiss()
             // Rebuild the graph
-//            createProgramActivity.Graph.removeAllSeries()
-//            val graphArray = mutableListOf<DataPoint>()
-//            var tempo = 0
-//            val instructions = mainMetronome.program.instructions.toSortedMap().toList()
-//            for (i in instructions) {
-//                if (!i.second.interpolate) {
-//                    graphArray.add(DataPoint(i.first.toDouble(), tempo.toDouble()))
-//                }
-//                graphArray.add(DataPoint(i.first.toDouble(), i.second.tempo.toDouble()))
-//                tempo = i.second.tempo
-//            }
-//            createProgramActivity.Graph.addSeries(LineGraphSeries(graphArray.toTypedArray()))
-//            if (mainMetronome.getProgram().length() != 0L) {
-//                createProgramActivity.Graph.viewport.setMaxX(mainMetronome.getProgram().length().toDouble())
-//            }
-//            mainMetronome.formatGraph()
-
+            mainMetronome.updateGraph(createProgramActivity.Graph)
         }
     }
 
     private fun exit() {
         mainMetronome.stop()
         mainMetronome.getProgram().clear()
-//        mainMetronome.graph = null
         createProgramActivity.Graph.removeAllSeries()
         createProgramActivity.ProgramName.setText("")
         editorPopup.BarNumberInputField.setText("")

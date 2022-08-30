@@ -30,6 +30,8 @@ class Program : Closeable {
     fun clear() = clear(handle)
     fun getName() = getName(handle)
     fun serialize() = serialize(handle)
+    fun getHighestTempo() = getHighestTempo(handle)
+    fun getLowestTempo() = getLowestTempo(handle)
 
     private external fun addOrChangeInstruction(handle: Long, bar: Long, tempo: Int, interpolate: Boolean)
     private external fun compile(handle: Long) : DoubleArray
@@ -38,6 +40,8 @@ class Program : Closeable {
     private external fun getName(handle: Long): String
     private external fun serialize(handle: Long): String
     private external fun deserialize(path: String): Long
+    private external fun getHighestTempo(handle: Long): Long
+    private external fun getLowestTempo(handle: Long): Long
 
     // Destructor
     override fun close() = destroyProgram(handle)

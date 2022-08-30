@@ -15,7 +15,10 @@ void Program::clear() {
 }
 
 void Program::addOrChangeInstruction(size_t t_bar, uint64_t t_tempo, bool t_interpolate) {
-    m_instructions[std::min(t_bar, size_t(0))] = *new Instruction{t_tempo, 4, 4, t_interpolate, std::min(t_bar, size_t(0))};
+    if (m_instructions.empty()) m_instructions[0] = Instruction{t_tempo, 4, 4, t_interpolate, 0};
+    m_instructions[std::max(t_bar, size_t(0))] = Instruction{t_tempo, 4, 4, t_interpolate, std::max(t_bar, size_t(0))};
+    m_highestTempo = std::max(m_highestTempo, t_tempo);
+    m_lowestTempo = std::min(m_lowestTempo, t_tempo);
 }
 
 std::vector<double> *Program::compile() {
@@ -29,15 +32,15 @@ std::vector<double> *Program::compile() {
     for (const auto &instruction : m_instructions) instructions.push_back(instruction.second);
 
     // Vector of compiled instructions to be converted to a jDoubleArray
-    auto *compiledInstructions = new std::vector<double>{};
+    auto *compiledInstructions{new std::vector<double>{}};
     compiledInstructions->reserve(m_instructions.size());
     size_t instructionStartingPosition{0};
 
     // Use the std::generate algorithm to fill the area between each instruction in the array
     for (size_t instruction{0}; instruction <= instructions.size(); ++instruction) {
-        double currentTempo = instructions[instruction].getTempo();
+        double currentTempo{static_cast<double>(instructions[instruction].getTempo())};
         size_t instructionLength{(instructions[instruction].getBarNumber() - instructions[instruction + 1].getBarNumber()) * (size_t) instructions[instruction].getNotesPerMeasure()};
-        double tempoChangePerBeat = (currentTempo - instructions[instruction + 1].getTempo()) / instructionLength;
+        double tempoChangePerBeat{(currentTempo - instructions[instruction + 1].getTempo()) / instructionLength};
         std::generate(compiledInstructions->begin() + (int) instructionStartingPosition, compiledInstructions->begin() + (int) instructionLength, [&currentTempo, &tempoChangePerBeat] { return currentTempo += tempoChangePerBeat; });
     }
 
@@ -90,6 +93,14 @@ std::istream &operator>>(std::istream &is, Program &program) {
     return is;
 }
 
+uint64_t Program::getHighestTempo() const {
+    return m_highestTempo;
+}
+
+uint64_t Program::getLowestTempo() const {
+    return m_lowestTempo;
+}
+
 extern "C" JNIEXPORT jlong JNICALL Java_dynamicmetronome_metronome_Program_createProgram(JNIEnv *env, jobject thiz) {
     return reinterpret_cast<jlong>(new Program);
 }
@@ -103,8 +114,8 @@ extern "C" JNIEXPORT void JNICALL Java_dynamicmetronome_metronome_Program_addOrC
 }
 
 extern "C" JNIEXPORT jdoubleArray JNICALL Java_dynamicmetronome_metronome_Program_compile(JNIEnv *env, jobject thiz, jlong handle) {
-    std::vector<double> *compiledInstructions = reinterpret_cast<Program *>(handle)->compile();
-    jdoubleArray output = env->NewDoubleArray((int) compiledInstructions->size());
+    std::vector<double> *compiledInstructions{reinterpret_cast<Program *>(handle)->compile()};
+    jdoubleArray output{env->NewDoubleArray((int) compiledInstructions->size())};
     env->SetDoubleArrayRegion(output, 0, (int) compiledInstructions->size(), compiledInstructions->data());
     return output;
 }
@@ -133,4 +144,12 @@ extern "C" JNIEXPORT jlong JNICALL Java_dynamicmetronome_metronome_Program_deser
     program->deserialize(file);
     file.close();
     return reinterpret_cast<jlong>(program);
+}
+
+extern "C" JNIEXPORT jlong JNICALL Java_dynamicmetronome_metronome_Program_getHighestTempo(JNIEnv *env, jobject thiz, jlong handle) {
+    return static_cast<jlong>(reinterpret_cast<Program *>(handle)->getHighestTempo());
+}
+
+extern "C" JNIEXPORT jlong JNICALL Java_dynamicmetronome_metronome_Program_getLowestTempo(JNIEnv *env, jobject thiz, jlong handle) {
+    return static_cast<jlong>(reinterpret_cast<Program *>(handle)->getLowestTempo());
 }

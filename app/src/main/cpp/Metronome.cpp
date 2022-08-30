@@ -10,15 +10,14 @@ Metronome::Metronome() {
     builder.setPerformanceMode(oboe::PerformanceMode::LowLatency);
     builder.setSharingMode(oboe::SharingMode::Exclusive);
 
-    oboe::Result result = builder.openStream(&m_stream);
+    oboe::Result result{builder.openStream(&m_stream)};
 
     if (result != oboe::Result::OK) {
         throw std::runtime_error(
                 std::string("Error opening m_stream: ") + oboe::convertToText(result));
     }
 
-    oboe::ResultWithValue <int32_t> setBufferSizeResult = m_stream->setBufferSizeInFrames(
-            m_stream->getFramesPerBurst() * 2);
+    oboe::ResultWithValue<int32_t> setBufferSizeResult{m_stream->setBufferSizeInFrames(m_stream->getFramesPerBurst() * 2)};
     if (setBufferSizeResult) {
         printf("New buffer size is %d frames", setBufferSizeResult.value());
     }
@@ -119,4 +118,16 @@ extern "C" JNIEXPORT void JNICALL Java_dynamicmetronome_metronome_Metronome_setT
 }
 extern "C" JNIEXPORT void JNICALL Java_dynamicmetronome_metronome_Metronome_setVolume(JNIEnv *env, jobject thiz, jlong handle, jdouble volume) {
     reinterpret_cast<Metronome *>(handle)->m_volume = volume;
+}
+extern "C" JNIEXPORT jdoubleArray JNICALL Java_dynamicmetronome_metronome_Metronome_getGraphContents(JNIEnv *env, jobject thiz, jlong handle) {
+    std::map<size_t, Instruction> instructions{*reinterpret_cast<Metronome *>(handle)->m_program.getInstructions()};
+    std::vector<double> *result{new std::vector<double>};
+    result->reserve(instructions.size() * 2);
+    for (const auto &[bar, instruction] : instructions) {
+        result->push_back(instruction.getTempo());
+        result->push_back(bar);
+    }
+    jdoubleArray output{env->NewDoubleArray((int) result->size())};
+    env->SetDoubleArrayRegion(output, 0, (int) result->size(), result->data());
+    return output;
 }

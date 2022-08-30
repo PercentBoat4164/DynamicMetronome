@@ -44,6 +44,10 @@ std::istream &operator>>(std::istream &is, Instruction &instruction) {
     return is;
 }
 
+bool Instruction::getInterpolation() {
+    return m_interpolate;
+}
+
 extern "C" JNIEXPORT jlong JNICALL Java_dynamicmetronome_metronome_Instruction_createInstruction(JNIEnv *env, jobject thiz) {
     return reinterpret_cast<jlong>(new Instruction);
 }
