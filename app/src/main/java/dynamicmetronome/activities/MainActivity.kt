@@ -12,6 +12,8 @@ import androidx.databinding.DataBindingUtil
 import dynamicmetronome.activities.databinding.MainActivityBinding
 import dynamicmetronome.metronome.Metronome
 
+
+
 val mainMetronome: Metronome = Metronome() /**@todo Find a better way to do this.*/
 
 class MainActivity : AppCompatActivity() {
@@ -20,10 +22,10 @@ class MainActivity : AppCompatActivity() {
     @SuppressLint("SourceLockedOrientationActivity")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         mainActivity = DataBindingUtil.setContentView(this, R.layout.main_activity)
-
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT  // @todo Find a way to make the orientation not break things.
+
+        mainMetronome.useSound(resources.openRawResource(R.raw.metronome_sample).readBytes())
 
         // Set up the main activity
         mainActivity.TempoNumberPicker.minValue = MIN_TEMPO.toInt()

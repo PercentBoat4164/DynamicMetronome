@@ -1,9 +1,10 @@
 #include "Metronome.hpp"
 #include <jni.h>
 #include <fstream>
+#include <chrono>
 
 
-Metronome::Metronome() {
+Metronome::Metronome() : m_sound(new std::vector<float>(1, 1)) {
     oboe::AudioStreamBuilder builder;
 
     builder.setCallback(this)
@@ -26,67 +27,43 @@ Metronome::Metronome() {
         printf("New buffer size is %d frames", setBufferSizeResult.value());
     }
 
-    result = m_stream->requestStart();
-
-    if (result != oboe::Result::OK) {
-        throw std::runtime_error(
-                std::string("Error starting m_stream: ") + oboe::convertToText(result));
-    }
+    m_samplesPerSecond = m_stream->getSampleRate() * 60;
+    m_channelCount = m_stream->getChannelCount();
 }
 
 Metronome::~Metronome() {
     m_stream->flush();
     m_stream->close();
 }
-static int constexpr kChannelCount = 2;
-static int constexpr kSampleRate = 48000;
-static float constexpr kAmplitude = 0.5f;
-static float constexpr kFrequency = 440;
-static float constexpr kPI = M_PI;
-static float constexpr kTwoPi = kPI * 2;
-static double constexpr mPhaseIncrement = kFrequency * kTwoPi / (double) kSampleRate;
-// Keeps track of where the wave is
-float mPhase = 0.0;
 
 oboe::DataCallbackResult
 Metronome::onAudioReady(oboe::AudioStream *audioStream, void *audioData, int32_t numFrames) {
-    float *floatData = (float *) audioData;
-    for (int i = 0; i < numFrames; ++i) {
-        float sampleValue = kAmplitude * sinf(mPhase);
-        for (int j = 0; j < kChannelCount; j++) {
-            floatData[i * kChannelCount + j] = sampleValue;
+    uint64_t startFrame = frameNumber;
+    auto *floatData = (float *) audioData;
+    for (; frameNumber < numFrames + startFrame; ++frameNumber) {
+        if (frameNumber == nextClick) {
+            nextClick += m_samplesPerSecond / m_tempo;
+            m_soundTracker = 0u;
         }
-        mPhase += mPhaseIncrement;
-        if (mPhase >= kTwoPi) mPhase -= kTwoPi;
+        for (int i = 0; i < m_channelCount; ++i) {
+            floatData[frameNumber - startFrame + i] = (m_soundTracker < m_sound->size() ? (*m_sound)[m_soundTracker++] : 0) * (float) m_volume;
+        }
     }
     return oboe::DataCallbackResult::Continue;
 }
 
 void Metronome::start() {
-    stop();
-    m_playing = true;
     m_playHead = 0;
-    m_thread = std::thread([&] {
-        while (m_playing) {
-            if (m_playHead < m_program.length()) {
-                // Play program
-                /**@todo Enqueue sound*/
-                std::this_thread::sleep_for(std::chrono::duration<double, std::milli>{
-                        (*m_compiledInstructions)[m_playHead]});
-            } else if (m_playHead == 0) {
-                // Play metronome normally
-                /**@ todo Enqueue sound*/
-                std::this_thread::sleep_for(
-                        std::chrono::duration<double, std::milli>{60000 / m_tempo});
-            }
-        }
-        if (m_compiledInstructions != nullptr) free(m_compiledInstructions);
-    });
+    nextClick = frameNumber;
+    oboe::Result result = m_stream->requestStart();
+    if (result != oboe::Result::OK) {
+        throw std::runtime_error(
+                std::string("Error starting m_stream: ") + oboe::convertToText(result));
+    }
 }
 
 void Metronome::stop() {
-    m_playing = false;
-    if (m_thread.joinable()) m_thread.join();
+    m_stream->requestStop();
 }
 
 void Metronome::executeProgram() {
@@ -95,18 +72,18 @@ void Metronome::executeProgram() {
 }
 
 void Metronome::togglePlaying() {
-    m_playing ^= true;
-    if (m_playing) start(); else stop();
+    if (m_stream->getState() == oboe::StreamState::Started) stop();
+    else start();
 }
 
 extern "C" JNIEXPORT jlong JNICALL
-Java_dynamicmetronome_metronome_Metronome_createMetronome(JNIEnv *env, jobject thiz) {
+Java_dynamicmetronome_metronome_Metronome_create(JNIEnv *env, jobject thiz) {
     return reinterpret_cast<jlong>(new Metronome);
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_dynamicmetronome_metronome_Metronome_destroyMetronome(JNIEnv *env, jobject thiz,
-                                                           jlong handle) {
+Java_dynamicmetronome_metronome_Metronome_destroy(JNIEnv *env, jobject thiz,
+                                                  jlong handle) {
     delete reinterpret_cast<Metronome *>(handle);
 }
 
@@ -176,4 +153,13 @@ Java_dynamicmetronome_metronome_Metronome_getGraphContents(JNIEnv *env, jobject 
     jdoubleArray output{env->NewDoubleArray((int) result->size())};
     env->SetDoubleArrayRegion(output, 0, (int) result->size(), result->data());
     return output;
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_dynamicmetronome_metronome_Metronome_useSound(JNIEnv *env, jobject thiz, jlong handle,
+                                                   jbyteArray bytes) {
+    std::vector<float> *sound = reinterpret_cast<Metronome *>(handle)->m_sound;
+    jboolean boolean{false};
+    auto thing = env->GetByteArrayElements(bytes, &boolean);
+    sound->assign((size_t) env->GetArrayLength(bytes), (float) *thing);
 }

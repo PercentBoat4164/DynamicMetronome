@@ -3,8 +3,12 @@ package dynamicmetronome.metronome
 import com.jjoe64.graphview.GraphView
 import com.jjoe64.graphview.series.DataPoint
 import com.jjoe64.graphview.series.LineGraphSeries
+import dynamicmetronome.activities.R
+
 import java.io.Closeable
+import java.io.InputStream
 import kotlin.math.max
+
 
 /**
  * Metronome wrapper class
@@ -12,13 +16,13 @@ import kotlin.math.max
  * Contains a handle to the C++ object data that is used by this class on the C++ side.
  */
 class Metronome : Closeable {
-    private val handle: Long = createMetronome()
+    private val handle: Long = create()
 
-    private external fun createMetronome() : Long
-    private external fun destroyMetronome(handle: Long)
-
+    // Destructor
+    override fun close() = destroy(handle)
     fun start() = start(handle)
     fun stop() = stop(handle)
+    fun useSound(bytes: ByteArray) = useSound(handle, bytes)
     fun executeProgram() = executeProgram(handle)
     fun togglePlaying() = togglePlaying(handle)
     fun getProgram() = Program(getProgram(handle))
@@ -40,8 +44,11 @@ class Metronome : Closeable {
         graph.viewport.setMinX(0.0)
     }
 
+    private external fun create() : Long
+    private external fun destroy(handle: Long)
     private external fun start(handle: Long)
     private external fun stop(handle: Long)
+    private external fun useSound(handle: Long, bytes: ByteArray)
     private external fun executeProgram(handle: Long)
     private external fun togglePlaying(handle: Long)
     private external fun getProgram(handle: Long) : Long
@@ -49,7 +56,4 @@ class Metronome : Closeable {
     private external fun setTempo(handle: Long, tempo: Int)
     private external fun setVolume(handle: Long, volume: Double)
     private external fun getGraphContents(handle: Long) : DoubleArray
-
-    // Destructor
-    override fun close() = destroyMetronome(handle)
 }
