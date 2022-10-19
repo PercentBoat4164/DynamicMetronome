@@ -3,15 +3,20 @@ package dynamicmetronome.activities
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.ActivityInfo
+import android.content.res.AssetFileDescriptor
+import android.media.*
+import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.widget.CompoundButton
 import android.widget.NumberPicker
 import android.widget.SeekBar
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import dynamicmetronome.activities.databinding.MainActivityBinding
 import dynamicmetronome.metronome.Metronome
-
+import java.nio.ByteBuffer
 
 
 val mainMetronome: Metronome = Metronome() /**@todo Find a better way to do this.*/
@@ -19,13 +24,92 @@ val mainMetronome: Metronome = Metronome() /**@todo Find a better way to do this
 class MainActivity : AppCompatActivity() {
     lateinit var mainActivity: MainActivityBinding
 
+    fun decode(stream: AssetFileDescriptor) {
+        val extractor = MediaExtractor()
+        extractor.setDataSource(stream.fileDescriptor, stream.startOffset, stream.length)
+
+        var decoder = MediaCodec.createByCodecName(MediaCodecList(MediaCodecList.ALL_CODECS).findDecoderForFormat(extractor.getTrackFormat(0)))
+
+        for (i in 0 until extractor.trackCount) {
+            val format = extractor.getTrackFormat(i)
+            val mime = format.getString(MediaFormat.KEY_MIME)
+            if (mime!!.startsWith("audio/")) {
+                extractor.selectTrack(i)
+                decoder = MediaCodec.createDecoderByType(mime)
+                decoder.configure(MediaFormat.createAudioFormat(MediaFormat.MIMETYPE_AUDIO_RAW, 48000, 2), null, null, 0)
+                break
+            }
+        }
+
+        decoder.start();
+
+        val outputBuffers = ArrayList<ByteBuffer>()
+        val info = MediaCodec.BufferInfo()
+        var isEOS = false
+
+        while (!isEOS) {
+            val inIndex = decoder.dequeueInputBuffer(10000)
+            if (inIndex >= 0) {
+                val buffer = decoder.getInputBuffer(inIndex)!!
+                val sampleSize = extractor.readSampleData(buffer, 0)
+                if (sampleSize < 0) {
+                    // We shouldn't stop the recording at this point, just pass the EOS
+                    // flag to decoder, we will get it again from the
+                    // dequeueOutputBuffer
+                    Log.d("DecodeActivity", "InputBuffer BUFFER_FLAG_END_OF_STREAM")
+                    decoder.queueInputBuffer(inIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+                    isEOS = true
+                } else {
+                    decoder.queueInputBuffer(inIndex, 0, sampleSize, extractor.sampleTime, 0)
+                    extractor.advance()
+                }
+            }
+
+            when (val outIndex = decoder.dequeueOutputBuffer(info, 10000)) {
+                MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> {
+                    Log.d("DecodeActivity", "New format " + decoder.outputFormat)
+                }
+                MediaCodec.INFO_TRY_AGAIN_LATER -> {
+                    Log.d("DecodeActivity", "dequeueOutputBuffer timed out!")
+                }
+                else -> {
+                    outputBuffers.add(decoder.getOutputBuffer(outIndex)!!)
+                    decoder.releaseOutputBuffer(outIndex, false)
+                }
+            }
+        }
+        decoder.stop()
+        decoder.release()
+        extractor.release()
+    }
+
     @SuppressLint("SourceLockedOrientationActivity")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         mainActivity = DataBindingUtil.setContentView(this, R.layout.main_activity)
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT  // @todo Find a way to make the orientation not break things.
 
-        mainMetronome.useSound(resources.openRawResource(R.raw.metronome_sample).readBytes())
+        decode(resources.openRawResourceFd(R.raw.metronome_sample1))
+
+//        val mex = MediaExtractor()
+//        val afd = resources.openRawResourceFd(R.raw.metronome_sample1)
+//        mex.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+//
+//        val codec = MediaCodec.createByCodecName(MediaCodecList(MediaCodecList.ALL_CODECS).findDecoderForFormat(mex.getTrackFormat(0)))
+//
+//        val outputBuffer = codec.getOutputBuffer(0)
+//        val format = codec.getOutputFormat(0)
+//        val samples = outputBuffer?.order(ByteOrder.nativeOrder())?.asFloatBuffer()
+//        val numChannels = format.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
+//
+//        val res = samples?.let { FloatArray(it.remaining()) }
+//        for (i in res?.indices!!) {
+//            for (j in 0 until numChannels) {
+//                res[i] = samples.get(i * numChannels + j)
+//            }
+//        }
+
+//        mainMetronome.useSound(res)
 
         // Set up the main activity
         mainActivity.TempoNumberPicker.minValue = MIN_TEMPO.toInt()

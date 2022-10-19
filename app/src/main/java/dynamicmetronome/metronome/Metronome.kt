@@ -22,7 +22,7 @@ class Metronome : Closeable {
     override fun close() = destroy(handle)
     fun start() = start(handle)
     fun stop() = stop(handle)
-    fun useSound(bytes: ByteArray) = useSound(handle, bytes)
+    fun useSound(bytes: FloatArray) = useSound(handle, bytes)
     fun executeProgram() = executeProgram(handle)
     fun togglePlaying() = togglePlaying(handle)
     fun getProgram() = Program(getProgram(handle))
@@ -48,7 +48,7 @@ class Metronome : Closeable {
     private external fun destroy(handle: Long)
     private external fun start(handle: Long)
     private external fun stop(handle: Long)
-    private external fun useSound(handle: Long, bytes: ByteArray)
+    private external fun useSound(handle: Long, bytes: FloatArray)
     private external fun executeProgram(handle: Long)
     private external fun togglePlaying(handle: Long)
     private external fun getProgram(handle: Long) : Long

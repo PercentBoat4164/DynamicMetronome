@@ -45,9 +45,8 @@ Metronome::onAudioReady(oboe::AudioStream *audioStream, void *audioData, int32_t
             nextClick += m_samplesPerSecond / m_tempo;
             m_soundTracker = 0u;
         }
-        for (int i = 0; i < m_channelCount; ++i) {
-            floatData[frameNumber - startFrame + i] = (m_soundTracker < m_sound->size() ? (*m_sound)[m_soundTracker++] : 0) * (float) m_volume;
-        }
+        float sample = (m_soundTracker < m_sound->size() ? (*m_sound)[m_soundTracker++] : 0) * (float) m_volume;
+        for (int i = 0; i < m_channelCount; ++i) floatData[(frameNumber - startFrame) * m_channelCount + i] = sample;
     }
     return oboe::DataCallbackResult::Continue;
 }
@@ -157,9 +156,8 @@ Java_dynamicmetronome_metronome_Metronome_getGraphContents(JNIEnv *env, jobject 
 extern "C"
 JNIEXPORT void JNICALL
 Java_dynamicmetronome_metronome_Metronome_useSound(JNIEnv *env, jobject thiz, jlong handle,
-                                                   jbyteArray bytes) {
+                                                   jfloatArray samples) {
     std::vector<float> *sound = reinterpret_cast<Metronome *>(handle)->m_sound;
-    jboolean boolean{false};
-    auto thing = env->GetByteArrayElements(bytes, &boolean);
-    sound->assign((size_t) env->GetArrayLength(bytes), (float) *thing);
+    auto *javaSoundData = env->GetFloatArrayElements(samples, new jboolean(false));
+    sound->assign((size_t) env->GetArrayLength(samples), (float) *javaSoundData);
 }

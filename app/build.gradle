@@ -19,7 +19,7 @@ android {
 
     defaultConfig {
         applicationId "dynamicmetronome.mainactivity"
-        minSdk 16
+        minSdk 21
         targetSdkVersion 33
         versionCode 3
         versionName "0.0.3"
