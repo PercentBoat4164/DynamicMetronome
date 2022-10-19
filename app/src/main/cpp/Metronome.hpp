@@ -27,14 +27,14 @@ public:
     std::vector<double> *m_compiledInstructions{};
     oboe::AudioStream *m_stream{};
     size_t m_soundTracker{};
-    std::vector<float> *m_sound;
+    std::vector<float> m_sound;
     double m_volume{};
     int m_tempo{130};
     int m_playHead{};
     Program m_program;
     uint64_t frameNumber{};
     uint64_t nextClick{};
-    uint64_t m_samplesPerSecond;
+    uint64_t m_framesPerMinute;
     uint8_t m_channelCount;
 };
 

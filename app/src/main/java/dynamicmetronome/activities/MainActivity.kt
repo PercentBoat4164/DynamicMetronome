@@ -3,6 +3,8 @@ package dynamicmetronome.activities
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.ActivityInfo
+import android.content.res.AssetFileDescriptor
+import android.media.*
 import android.os.Bundle
 import android.widget.CompoundButton
 import android.widget.NumberPicker
@@ -11,7 +13,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import dynamicmetronome.activities.databinding.MainActivityBinding
 import dynamicmetronome.metronome.Metronome
-
 
 
 val mainMetronome: Metronome = Metronome() /**@todo Find a better way to do this.*/
@@ -25,7 +26,7 @@ class MainActivity : AppCompatActivity() {
         mainActivity = DataBindingUtil.setContentView(this, R.layout.main_activity)
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT  // @todo Find a way to make the orientation not break things.
 
-        mainMetronome.useSound(resources.openRawResource(R.raw.metronome_sample).readBytes())
+        mainMetronome.useSound(resources.openRawResourceFd(R.raw.metronome_sample))
 
         // Set up the main activity
         mainActivity.TempoNumberPicker.minValue = MIN_TEMPO.toInt()

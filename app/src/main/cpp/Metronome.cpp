@@ -1,10 +1,9 @@
 #include "Metronome.hpp"
 #include <jni.h>
 #include <fstream>
-#include <chrono>
+#include <cstddef>
 
-
-Metronome::Metronome() : m_sound(new std::vector<float>(1, 1)) {
+Metronome::Metronome() : m_sound(std::vector<float>(1, 1)) {
     oboe::AudioStreamBuilder builder;
 
     builder.setCallback(this)
@@ -27,7 +26,7 @@ Metronome::Metronome() : m_sound(new std::vector<float>(1, 1)) {
         printf("New buffer size is %d frames", setBufferSizeResult.value());
     }
 
-    m_samplesPerSecond = m_stream->getSampleRate() * 60;
+    m_framesPerMinute = m_stream->getSampleRate() * 60;
     m_channelCount = m_stream->getChannelCount();
 }
 
@@ -42,18 +41,19 @@ Metronome::onAudioReady(oboe::AudioStream *audioStream, void *audioData, int32_t
     auto *floatData = (float *) audioData;
     for (; frameNumber < numFrames + startFrame; ++frameNumber) {
         if (frameNumber == nextClick) {
-            nextClick += m_samplesPerSecond / m_tempo;
+            nextClick += m_framesPerMinute / m_tempo;
             m_soundTracker = 0u;
         }
-        for (int i = 0; i < m_channelCount; ++i) {
-            floatData[frameNumber - startFrame + i] = (m_soundTracker < m_sound->size() ? (*m_sound)[m_soundTracker++] : 0) * (float) m_volume;
-        }
+        auto frame = (frameNumber - startFrame) * m_channelCount;
+        float sample = m_sound[std::min(m_soundTracker++, m_sound.size()-1)] * (float) m_volume;
+        for (int i = 0; i < m_channelCount; ++i) floatData[frame + i] = sample;
     }
     return oboe::DataCallbackResult::Continue;
 }
 
 void Metronome::start() {
     m_playHead = 0;
+    m_soundTracker = 0;
     nextClick = frameNumber;
     oboe::Result result = m_stream->requestStart();
     if (result != oboe::Result::OK) {
@@ -157,9 +157,10 @@ Java_dynamicmetronome_metronome_Metronome_getGraphContents(JNIEnv *env, jobject 
 extern "C"
 JNIEXPORT void JNICALL
 Java_dynamicmetronome_metronome_Metronome_useSound(JNIEnv *env, jobject thiz, jlong handle,
-                                                   jbyteArray bytes) {
-    std::vector<float> *sound = reinterpret_cast<Metronome *>(handle)->m_sound;
-    jboolean boolean{false};
-    auto thing = env->GetByteArrayElements(bytes, &boolean);
-    sound->assign((size_t) env->GetArrayLength(bytes), (float) *thing);
+                                                   jfloatArray samples) {
+    std::vector<float> &sound = reinterpret_cast<Metronome *>(handle)->m_sound;
+    auto *javaSoundData = env->GetFloatArrayElements(samples, nullptr);
+    sound.resize(env->GetArrayLength(samples));
+    for (int i = 0; i < sound.size(); ++i)
+        sound[i] = (float) javaSoundData[i];
 }
