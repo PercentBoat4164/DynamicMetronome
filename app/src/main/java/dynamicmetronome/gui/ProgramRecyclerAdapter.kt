@@ -10,12 +10,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import dynamicmetronome.activities.R
 import dynamicmetronome.metronome.Metronome
-import dynamicmetronome.metronome.Program
-import java.io.ObjectInputStream
 
-
-
-class ProgramRecyclerAdapter (
+class ProgramRecyclerAdapter(
     private val modelList: ArrayList<ProgramRecyclerModel>,
     private val applicationContext: Context,
     private var metronome: Metronome
@@ -28,7 +24,8 @@ class ProgramRecyclerAdapter (
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.program_entry, parent, false)
+        val view =
+            LayoutInflater.from(parent.context).inflate(R.layout.program_entry, parent, false)
         return ViewHolder(view)
     }
 
@@ -48,7 +45,7 @@ class ProgramRecyclerAdapter (
             applicationContext.deleteFile(holder.nameView.text.toString() + ".met")
         }
         holder.play.setOnClickListener {
-            metronome.loadProgram(holder.nameView.text.toString() + ".met")
+//            metronome.loadProgram(holder.nameView.text.toString() + ".met")
             metronome.togglePlaying()
         }
     }

@@ -18,12 +18,12 @@ class ListProgramsActivity : Activity() {
 
         programsActivity = DataBindingUtil.setContentView(this, R.layout.list_programs_activity)
 
-        programsActivity.HomeButton.setOnClickListener{
+        programsActivity.HomeButton.setOnClickListener {
             mainMetronome.stop()
-            mainMetronome.getProgram().clear()
+            mainMetronome.program.clear()
             finish()
         }
-        programsActivity.NewProgramButton.setOnClickListener{
+        programsActivity.NewProgramButton.setOnClickListener {
             startActivityForResult(Intent(this, CreateProgramsActivity::class.java), 1)
         }
 
@@ -37,7 +37,8 @@ class ListProgramsActivity : Activity() {
     }
 
     private fun buildRecycler() {
-        val files: ArrayList<out File>? = applicationContext.filesDir.listFiles()?.toCollection(ArrayList())
+        val files: ArrayList<out File>? =
+            applicationContext.filesDir.listFiles()?.toCollection(ArrayList())
         val data = ArrayList<ProgramRecyclerModel>()
         if (files != null) {
             for (file in files) {

@@ -1,42 +1,20 @@
-#ifndef DYNAMIC_METRONOME_METRONOME_HPP
-#define DYNAMIC_METRONOME_METRONOME_HPP
+#pragma once
 
-#include "Program.hpp"
-#include <oboe/Oboe.h>
-#include <thread>
+#include "AudioPlayer.hpp"
+#include "Instruction.hpp"
+
+#include <vector>
+#include <jni.h>
 
 /**
  * A Metronome class designed to play evenly timed beats.
  */
-class Metronome : public oboe::AudioStreamCallback {
+class Metronome {
 public:
-    Metronome();
-    ~Metronome();
-
-    void start();
-    void stop();
     void executeProgram();
-    void togglePlaying();
 
-    Program *getProgram() {
-        return &m_program;
-    }
+    AudioPlayer player{};
 
-    oboe::DataCallbackResult onAudioReady(oboe::AudioStream *, void *, int32_t);
-
-    std::vector<double> *m_compiledInstructions{};
-    oboe::AudioStream *m_stream{};
-    size_t m_soundTracker{};
-    std::vector<float> m_sound;
-    double m_volume{};
-    int m_tempo{130};
-    int m_playHead{};
-    Program m_program;
-    uint64_t frameNumber{};
-    uint64_t nextClick{};
-    uint64_t m_framesPerMinute;
-    uint8_t m_channelCount;
+private:
+    uint64_t m_playHead{};
 };
-
-
-#endif //DYNAMIC_METRONOME_METRONOME_HPP

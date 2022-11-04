@@ -8,8 +8,6 @@ import android.view.Gravity
 import android.widget.PopupWindow
 import android.widget.Toast
 import androidx.databinding.DataBindingUtil
-import com.jjoe64.graphview.series.DataPoint
-import com.jjoe64.graphview.series.LineGraphSeries
 import dynamicmetronome.activities.databinding.CreateProgramsActivityBinding
 import dynamicmetronome.activities.databinding.EditorPopupBinding
 import java.io.IOException
@@ -24,50 +22,61 @@ class CreateProgramsActivity : Activity() {
         super.onCreate(savedInstanceState)
 
         editorPopup = DataBindingUtil.setContentView(this, R.layout.editor_popup)
-        createProgramActivity = DataBindingUtil.setContentView(this, R.layout.create_programs_activity)
+        createProgramActivity =
+            DataBindingUtil.setContentView(this, R.layout.create_programs_activity)
 
-//        mainMetronome.graph = createProgramActivity.Graph
-
-        val programName = mainMetronome.getProgram().getName()
+        val programName = mainMetronome.program.name
         if (programName.isNotEmpty()) createProgramActivity.ProgramName.setText(programName)
 
-        // Set up the graph
-//        mainMetronome.updateGraph()
-
         // Set up the new element button's actions
-        createProgramActivity.NewElementButton.setOnClickListener{
+        createProgramActivity.NewElementButton.setOnClickListener {
             createProgramActivity.ProgramName.clearFocus()
-            popup = PopupWindow(editorPopup.root, (Resources.getSystem().displayMetrics.widthPixels * .8).toInt(), (Resources.getSystem().displayMetrics.heightPixels * .8).toInt(), true)
+            popup = PopupWindow(
+                editorPopup.root,
+                (Resources.getSystem().displayMetrics.widthPixels * .8).toInt(),
+                (Resources.getSystem().displayMetrics.heightPixels * .8).toInt(),
+                true
+            )
             popup.showAtLocation(createProgramActivity.root, Gravity.CENTER, 0, 0)
         }
         // Set up the confirm button's actions
-        createProgramActivity.ConfirmButton.setOnClickListener{
+        createProgramActivity.ConfirmButton.setOnClickListener {
             // Save the program to the appropriate file
             if (createProgramActivity.ProgramName.text.toString() != "") {
                 try {
-                    val file = ObjectOutputStream(applicationContext.openFileOutput(createProgramActivity.ProgramName.text.toString() + ".met", Context.MODE_PRIVATE))
-                    file.writeObject(mainMetronome.getProgram().serialize())
+                    val file = ObjectOutputStream(
+                        applicationContext.openFileOutput(
+                            createProgramActivity.ProgramName.text.toString() + ".met",
+                            Context.MODE_PRIVATE
+                        )
+                    )
+                    file.writeObject(mainMetronome)
                     file.close()
                 } catch (e: IOException) {
-                    Toast.makeText(applicationContext, "Failed to save file!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(applicationContext, "Failed to save file!", Toast.LENGTH_SHORT)
+                        .show()
                 }
             }
             exit()
         }
 
-        createProgramActivity.ExecuteProgram.setOnClickListener{
+        createProgramActivity.ExecuteProgram.setOnClickListener {
             // Compile and execute the program on the main metronome
             mainMetronome.togglePlaying()
         }
 
-        createProgramActivity.CancelButton.setOnClickListener{
+        createProgramActivity.CancelButton.setOnClickListener {
             exit()
         }
 
         /** Popup window initialization*/
         editorPopup.ConfirmButton.setOnClickListener {
             try {
-                mainMetronome.getProgram().addOrChangeInstruction(editorPopup.BarNumberInputField.text.toString().toLong(), Integer.parseInt(editorPopup.TempoInputField.text.toString()), editorPopup.Interpolate.isChecked)
+                mainMetronome.program.addOrChangeInstruction(
+                    editorPopup.BarNumberInputField.text.toString().toLong(),
+                    editorPopup.TempoInputField.text.toString().trim().split("\\s+".toRegex())[0].toDoubleOrNull()!!,
+                    editorPopup.Interpolate.isChecked
+                )
             } catch (e: NumberFormatException) {
                 Toast.makeText(this, "Some inputs are missing.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
@@ -80,7 +89,7 @@ class CreateProgramsActivity : Activity() {
 
     private fun exit() {
         mainMetronome.stop()
-        mainMetronome.getProgram().clear()
+        mainMetronome.program.clear()
         createProgramActivity.Graph.removeAllSeries()
         createProgramActivity.ProgramName.setText("")
         editorPopup.BarNumberInputField.setText("")

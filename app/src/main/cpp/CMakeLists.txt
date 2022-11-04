@@ -7,17 +7,14 @@ set(CMAKE_CXX_STANDARD 23)
 project("DynamicMetronome")
 
 add_library(metronome SHARED
-        Function.cpp
+        native.cpp
         Metronome.cpp
-        Metronome.hpp
-        Program.cpp
-        Program.hpp
         Instruction.cpp
-        Instruction.hpp
+        AudioPlayer.cpp
         )
 
 FetchContent_Declare(oboe GIT_REPOSITORY https://github.com/google/oboe GIT_TAG main)
 FetchContent_MakeAvailable(oboe)
 
 target_link_libraries(metronome PUBLIC oboe)
-target_include_directories(metronome PUBLIC ${oboe_SOURCE_DIR}/include)
+#target_include_directories(metronome PUBLIC ${oboe_SOURCE_DIR}/include)
