@@ -96,8 +96,13 @@ class MainActivity : AppCompatActivity() {
         mainActivity.TempoNumberPicker.wrapSelectorWheel = false
         mainActivity.TempoNumberPicker.displayedValues = Array(MAX_TEMPO.toInt()){(it + MIN_TEMPO.toInt()).toString()}
         mainActivity.TempoNumberPicker.setOnValueChangedListener { _: NumberPicker, _: Int, tempo: Int ->
-            mainMetronome.setTempo(tempo)
-            mainActivity.TempoSeekbar.progress = (tempo.toFloat() / (MAX_TEMPO - MIN_TEMPO) * 100).toInt()
+            mainMetronome.setTempo(tempo.toDouble())
+            val tempoRange = MAX_TEMPO - MIN_TEMPO
+            if (tempo.toDouble() == MAX_TEMPO) {
+                mainActivity.TempoSeekbar.progress = 100
+            } else {
+                mainActivity.TempoSeekbar.progress = 1 + ((tempo - MIN_TEMPO) * (100 - 1) / (MAX_TEMPO - MIN_TEMPO)).toInt()
+            }
         }
         mainActivity.QuarterPlaying.isChecked = true
         mainActivity.QuarterPlaying.setOnCheckedChangeListener{
