@@ -5,7 +5,6 @@ import android.media.MediaCodec
 import android.media.MediaCodecList
 import android.media.MediaExtractor
 import android.media.MediaFormat
-import com.jjoe64.graphview.GraphView
 import java.io.Closeable
 
 
@@ -15,8 +14,10 @@ import java.io.Closeable
  * Contains a handle to the C++ object data that is used by this class on the C++ side.
  */
 class Metronome : Closeable {
-    lateinit var program: Program
+    var program = Program()
     private var onClickCallback: () -> Unit = {}
+    private var onProgramStartCallback: () -> Unit = {}
+    private var onProgramEndCallback: () -> Unit = {}
 
     private val handle: Long = create()
     private var playing = false
@@ -109,43 +110,37 @@ class Metronome : Closeable {
         }.start()
     }
 
-    fun executeProgram() = executeProgram(handle)
+    fun executeProgram() {
+        programStartCallback()
+        executeProgram(handle, program.getTempos())
+    }
 
     fun setTempo(tempo: Double) = setTempo(handle, tempo)
-
     fun setVolume(volume: Float) = setVolume(handle, volume)
 
-    fun updateGraph(graph: GraphView) {
-//        val graphData = getGraphContents()
-//        val graphArray = mutableListOf<DataPoint>()
-//        for (i in graphData.indices step (2)) graphArray.add(
-//            DataPoint(
-//                graphData[i + 1],
-//                graphData[i]
-//            )
-//        )  // Create graph series data from graph contents from C++
-//        graph.removeAllSeries()
-//        graph.addSeries(LineGraphSeries(graphArray.toTypedArray()))
-//
-//        // Set graph viewport dimensions correctly
-//        graph.viewport.setMaxY(getProgram().getHighestTempo() + getProgram().getHighestTempo() * .02)  // Highest tempo + 2% leaves a comfortable space
-//        graph.viewport.setMinY(getProgram().getLowestTempo() - getProgram().getLowestTempo() * .02)  // Same here.
-//        graph.viewport.setMaxX(max(graphData[graphData.size - 1] + 1, 1.0))
-//        graph.viewport.setMinX(0.0)
-    }
 
     fun setOnClickCallback(function: () -> Unit) {
         onClickCallback = function
     }
 
-    private fun callback() = onClickCallback()
+    fun setOnProgramStartCallback(function: () -> Unit) {
+        onProgramStartCallback = function
+    }
+
+    fun setOnProgramEndCallback(function: () -> Unit) {
+        onProgramEndCallback = function
+    }
+
+    private fun clickCallback() = onClickCallback()
+    private fun programEndCallback() = onProgramEndCallback()
+    private fun programStartCallback() = onProgramStartCallback()
 
     private external fun create(): Long
     private external fun destroy(handle: Long)
     private external fun start(handle: Long)
     private external fun stop(handle: Long)
     private external fun useSound(handle: Long, bytes: FloatArray)
-    private external fun executeProgram(handle: Long)
+    private external fun executeProgram(handle: Long, instructions: DoubleArray)
     private external fun setTempo(handle: Long, tempo: Double)
     private external fun setVolume(handle: Long, volume: Float)
 }

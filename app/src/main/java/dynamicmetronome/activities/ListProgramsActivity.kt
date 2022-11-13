@@ -6,9 +6,8 @@ import android.os.Bundle
 import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import dynamicmetronome.activities.databinding.ListProgramsActivityBinding
+import dynamicmetronome.gui.ProgramListData
 import dynamicmetronome.gui.ProgramRecyclerAdapter
-import dynamicmetronome.gui.ProgramRecyclerModel
-import java.io.File
 
 class ListProgramsActivity : Activity() {
     private lateinit var programsActivity: ListProgramsActivityBinding
@@ -37,14 +36,9 @@ class ListProgramsActivity : Activity() {
     }
 
     private fun buildRecycler() {
-        val files: ArrayList<out File>? =
-            applicationContext.filesDir.listFiles()?.toCollection(ArrayList())
-        val data = ArrayList<ProgramRecyclerModel>()
-        if (files != null) {
-            for (file in files) {
-                data.add(ProgramRecyclerModel(file.name.substring(0, file.name.length - 4)))
-            }
-        }
+        val files = applicationContext.filesDir.listFiles()?.toCollection(ArrayList())
+        val data = ArrayList<ProgramListData>()
+        for (file in files!!) data.add(ProgramListData(file.name.substring(0, file.name.length - 4)))
         val adapter = ProgramRecyclerAdapter(data, this, mainMetronome)
         programsActivity.ProgramList.adapter = adapter
     }

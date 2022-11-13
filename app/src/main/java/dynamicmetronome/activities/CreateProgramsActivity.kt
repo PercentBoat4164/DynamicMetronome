@@ -8,6 +8,8 @@ import android.view.Gravity
 import android.widget.PopupWindow
 import android.widget.Toast
 import androidx.databinding.DataBindingUtil
+import com.jjoe64.graphview.series.DataPoint
+import com.jjoe64.graphview.series.LineGraphSeries
 import dynamicmetronome.activities.databinding.CreateProgramsActivityBinding
 import dynamicmetronome.activities.databinding.EditorPopupBinding
 import java.io.IOException
@@ -17,14 +19,23 @@ class CreateProgramsActivity : Activity() {
     private lateinit var createProgramActivity: CreateProgramsActivityBinding
     private lateinit var editorPopup: EditorPopupBinding
     private lateinit var popup: PopupWindow
+    private var series = LineGraphSeries(mutableListOf(DataPoint(0.0, 0.0)).toTypedArray())
+    private var playHead = LineGraphSeries(mutableListOf(DataPoint(0.0, 0.0)).toTypedArray())
+    private var playHeadLocation = 0.0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        mainMetronome.setOnProgramStartCallback {
+            playHeadLocation = 0.0
+            mainMetronome.setOnClickCallback { stepPlayHead() }
+        }
 
         editorPopup = DataBindingUtil.setContentView(this, R.layout.editor_popup)
         createProgramActivity =
             DataBindingUtil.setContentView(this, R.layout.create_programs_activity)
 
+        createProgramActivity.Graph.addSeries(series)
         val programName = mainMetronome.program.name
         if (programName.isNotEmpty()) createProgramActivity.ProgramName.setText(programName)
 
@@ -61,8 +72,7 @@ class CreateProgramsActivity : Activity() {
         }
 
         createProgramActivity.ExecuteProgram.setOnClickListener {
-            // Compile and execute the program on the main metronome
-            mainMetronome.togglePlaying()
+            mainMetronome.executeProgram()
         }
 
         createProgramActivity.CancelButton.setOnClickListener {
@@ -83,8 +93,51 @@ class CreateProgramsActivity : Activity() {
             }
             popup.dismiss()
             // Rebuild the graph
-            mainMetronome.updateGraph(createProgramActivity.Graph)
+            buildGraph()
         }
+    }
+
+    private fun buildGraph() {
+        createProgramActivity.Graph.removeSeries(series)
+        series = LineGraphSeries()
+        series.dataPointsRadius = 100.0f
+        val instructions = mainMetronome.program.getInstructionsAndBars()
+        series.appendData(
+            DataPoint(0.0,
+                instructions[0].second.startTempo),
+            false,
+            Int.MAX_VALUE,
+            true)
+        for (i in instructions.indices) {
+            try {  // This exception will always be triggered on the first run of this loop.
+                // If there is interpolation.
+                if (instructions[i].second.tempoOffset != Double.POSITIVE_INFINITY)
+                    series.appendData(
+                        DataPoint(instructions[i - 1].first.toDouble(),
+                            instructions[i].second.startTempo),
+                        false,
+                        Int.MAX_VALUE,
+                        true)
+            } catch (_: IndexOutOfBoundsException) {}
+            series.appendData(
+                DataPoint(instructions[i].first.toDouble(), instructions[i].second.startTempo),
+                false,
+                Int.MAX_VALUE,
+                true)
+        }
+        createProgramActivity.Graph.addSeries(series)
+    }
+
+    private fun stepPlayHead() {
+        playHeadLocation += 0.25
+        createProgramActivity.Graph.removeSeries(playHead)
+        playHead = LineGraphSeries(
+            mutableListOf(
+                DataPoint(playHeadLocation, 0.0),
+                DataPoint(
+                    playHeadLocation,
+                    120.0)).toTypedArray())
+        createProgramActivity.Graph.addSeries(playHead)
     }
 
     private fun exit() {

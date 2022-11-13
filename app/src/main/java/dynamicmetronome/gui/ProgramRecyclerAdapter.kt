@@ -12,7 +12,7 @@ import dynamicmetronome.activities.R
 import dynamicmetronome.metronome.Metronome
 
 class ProgramRecyclerAdapter(
-    private val modelList: ArrayList<ProgramRecyclerModel>,
+    private val modelList: ArrayList<ProgramListData>,
     private val applicationContext: Context,
     private var metronome: Metronome
 ) : RecyclerView.Adapter<ProgramRecyclerAdapter.ViewHolder>() {

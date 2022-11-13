@@ -24,6 +24,8 @@ public:
 
     void _setOnClickCallback(std::function<void()> t_callback);
 
+    std::function<void()> _getOnClickCallback();
+
     void _init();
 
 private:
@@ -38,18 +40,18 @@ private:
     uint64_t m_framesPerMinute;
     uint8_t m_channelCount;
     uint64_t m_clickSize;
-    std::function<void()> m_callback {[] {}};
-    std::atomic<bool> m_kill{false};
-    std::thread m_callbackThread{[&] {
-        JVMHolder::getInst().vm->GetEnv((void **) &JVMHolder::getInst().callbackEnv, JNI_VERSION_1_6);
-        JVMHolder::getInst().vm->AttachCurrentThread(&JVMHolder::getInst().callbackEnv, nullptr);
-        while (!m_kill) {{
-            std::unique_lock<std::mutex> lock(m_mutex);
-            m_condition.wait(lock);
-            m_callback();
+    std::function<void()> m_onClickCallback {[] {}};
+    std::atomic<bool> m_killOnClickCallbackThread{false};
+    std::thread m_onClickCallbackThread{[&] {
+        JVMHolder::getInst().vm->GetEnv((void **) &JVMHolder::getInst().clickCallbackEnv, JNI_VERSION_1_6);
+        JVMHolder::getInst().vm->AttachCurrentThread(&JVMHolder::getInst().clickCallbackEnv, nullptr);
+        while (!m_killOnClickCallbackThread) {{
+            std::unique_lock<std::mutex> lock(m_clickMutex);
+            m_clickCondition.wait(lock);
+            m_onClickCallback();
         }}
         JVMHolder::getInst().vm->DetachCurrentThread();
     }};
-    std::mutex m_mutex;
-    std::condition_variable m_condition;
+    std::mutex m_clickMutex;
+    std::condition_variable m_clickCondition;
 };

@@ -9,7 +9,6 @@ project("DynamicMetronome")
 add_library(metronome SHARED
         native.cpp
         Metronome.cpp
-        Instruction.cpp
         AudioPlayer.cpp
         )
 

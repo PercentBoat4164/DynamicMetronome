@@ -64,7 +64,7 @@ AudioPlayer::onAudioReady(oboe::AudioStream *audioStream, void *audioData, int32
         if (m_frameNumber == m_nextClick) {
             m_nextClick += m_clickSize;
             m_soundTracker = 0u;
-            m_condition.notify_one();
+            m_clickCondition.notify_one();
         }
         auto frame = (m_frameNumber - startFrame) * m_channelCount;
         float sample = m_sound[std::min(m_soundTracker++, m_sound.size() - 1)] * m_volume;
@@ -76,15 +76,19 @@ AudioPlayer::onAudioReady(oboe::AudioStream *audioStream, void *audioData, int32
 AudioPlayer::~AudioPlayer() {
     m_stream->flush();
     m_stream->close();
-    m_callback = []{};
-    m_kill = true;
-    m_condition.notify_one();
+    m_onClickCallback = []{};
+    m_killOnClickCallbackThread = true;
+    m_clickCondition.notify_one();
 }
 
 void AudioPlayer::_setOnClickCallback(std::function<void()> t_callback) {
-    m_callback = std::move(t_callback);
+    m_onClickCallback = std::move(t_callback);
+}
+
+std::function<void()> AudioPlayer::_getOnClickCallback() {
+    return m_onClickCallback;
 }
 
 void AudioPlayer::_init() {
-    m_condition.notify_one();
+    m_clickCondition.notify_one();
 }
