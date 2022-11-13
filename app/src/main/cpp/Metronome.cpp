@@ -7,17 +7,16 @@
 
 void Metronome::executeProgram(std::vector<double> t_instructions) {
     player.stop();
+    instruction = 0;
     player.setTempo(t_instructions[0]);
     std::function<void()> oldCallback = player._getOnClickCallback();
     player._setOnClickCallback([this, t_instructions, oldCallback] {
         if (++instruction == t_instructions.size()) {
             player._setOnClickCallback([this, oldCallback] {
-                player.stop();
-                player._setOnClickCallback(oldCallback);
                 m_programEndCondition.notify_one();
                 oldCallback();
+                player._setOnClickCallback(oldCallback);
             });
-            instruction = 0;
         }
         player.setTempo(t_instructions[instruction]);
         oldCallback();

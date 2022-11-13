@@ -23,6 +23,8 @@ public:
         while (!m_killOnProgramEndCallbackThread) {{
                 std::unique_lock<std::mutex> lock(m_programEndMutex);
                 m_programEndCondition.wait(lock);
+                instruction = 0;
+                player.stop();
                 m_onProgramEndCallback();
             }}
         JVMHolder::getInst().vm->DetachCurrentThread();

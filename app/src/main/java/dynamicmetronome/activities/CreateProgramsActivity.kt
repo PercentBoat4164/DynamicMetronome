@@ -28,7 +28,7 @@ class CreateProgramsActivity : Activity() {
 
         mainMetronome.setOnProgramStartCallback {
             playHeadLocation = 0.0
-            mainMetronome.setOnClickCallback { stepPlayHead() }
+//            mainMetronome.setOnClickCallback { stepPlayHead() }
         }
 
         editorPopup = DataBindingUtil.setContentView(this, R.layout.editor_popup)
@@ -111,8 +111,8 @@ class CreateProgramsActivity : Activity() {
         for (i in instructions.indices) {
             try {  // This exception will always be triggered on the first run of this loop.
                 // If there is not interpolation and there is a change in tempo.
-                if (instructions[i].second.startTempo == instructions[i -1].second.startTempo &&
-                    instructions[i].second.tempoOffset == 0.0)
+                if (instructions[i].second.startTempo != instructions[i - 1].second.startTempo &&
+                    instructions[i - 1].second.tempoOffset == 0.0)
                     series.appendData(
                         DataPoint(instructions[i - 1].first.toDouble(),
                             instructions[i].second.startTempo),
@@ -122,7 +122,7 @@ class CreateProgramsActivity : Activity() {
             } catch (_: IndexOutOfBoundsException) {}
             series.appendData(
                 DataPoint(instructions[i].first.toDouble(), instructions[i].second.startTempo),
-                false,
+                true,
                 Int.MAX_VALUE,
                 true)
         }
