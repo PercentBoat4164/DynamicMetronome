@@ -35,7 +35,7 @@ class Program {
             entries.add(0, Pair(0, Instruction(entries[0].second.startTempo, 0.0, entries[0].first * 4)))  // 4 as in 4/4 time signature
             for (entry in 1 until entries.size) {
                 try {
-                    entries[entry].second.beats = entries[entry].first - entries[entry - 1].first * 4  // 4 as in 4/4 time signature
+                    entries[entry].second.beats = (entries[entry].first - entries[entry - 1].first) * 4  // 4 as in 4/4 time signature
                     if (entries[entry].second.tempoOffset == Double.POSITIVE_INFINITY)
                         entries[entry].second.tempoOffset = entries[entry].second.startTempo - entries[entry - 1].second.startTempo
                     else entries[entry].second.tempoOffset = 0.0
