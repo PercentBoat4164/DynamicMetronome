@@ -12,7 +12,7 @@ add_library(metronome SHARED
         AudioPlayer.cpp
         )
 
-FetchContent_Declare(oboe GIT_REPOSITORY https://github.com/google/oboe GIT_TAG main)
+FetchContent_Declare(oboe GIT_REPOSITORY https://github.com/google/oboe GIT_TAG ..)
 FetchContent_MakeAvailable(oboe)
 
 target_link_libraries(metronome PUBLIC oboe)
