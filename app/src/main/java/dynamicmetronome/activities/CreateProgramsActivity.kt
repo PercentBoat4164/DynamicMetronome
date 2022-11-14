@@ -102,29 +102,23 @@ class CreateProgramsActivity : Activity() {
         series = LineGraphSeries()
         series.dataPointsRadius = 100.0f
         val instructions = mainMetronome.program.getInstructionsAndBars()
-        series.appendData(
-            DataPoint(0.0,
-                instructions[0].second.startTempo),
-            false,
-            Int.MAX_VALUE,
-            true)
         for (i in instructions.indices) {
-            try {  // This exception will always be triggered on the first run of this loop.
-                // If there is not interpolation and there is a change in tempo.
-                if (instructions[i].second.startTempo != instructions[i - 1].second.startTempo &&
-                    instructions[i - 1].second.tempoOffset == 0.0)
-                    series.appendData(
-                        DataPoint(instructions[i - 1].first.toDouble(),
-                            instructions[i].second.startTempo),
-                        false,
-                        Int.MAX_VALUE,
-                        true)
-            } catch (_: IndexOutOfBoundsException) {}
             series.appendData(
                 DataPoint(instructions[i].first.toDouble(), instructions[i].second.startTempo),
                 true,
                 Int.MAX_VALUE,
                 true)
+            try {  // This exception will always be triggered on the last run of this loop.
+                // If there is not interpolation and there is a change in tempo.
+                if (instructions[i].second.startTempo != instructions[i + 1].second.startTempo &&
+                    instructions[i].second.tempoOffset == 0.0)
+                    series.appendData(
+                        DataPoint(instructions[i + 1].first.toDouble(),
+                            instructions[i].second.startTempo),
+                        false,
+                        Int.MAX_VALUE,
+                        true)
+            } catch (_: IndexOutOfBoundsException) {}
         }
         createProgramActivity.Graph.addSeries(series)
     }

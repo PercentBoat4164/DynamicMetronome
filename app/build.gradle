@@ -21,8 +21,8 @@ android {
         applicationId "dynamicmetronome.mainactivity"
         minSdk 21
         targetSdkVersion 33
-        versionCode 3
-        versionName "0.0.3"
+        versionCode 5
+        versionName "0.1.1"
         externalNativeBuild {
             cmake {
                 cppFlags '-std=c++23'

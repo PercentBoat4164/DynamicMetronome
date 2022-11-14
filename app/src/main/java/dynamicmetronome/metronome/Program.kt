@@ -19,12 +19,14 @@ class Program {
     fun getTempos(): DoubleArray {
         val result = ArrayList<Double>()
         val entries = getInstructionsAndBars()
-        var tempo = entries[0].second.startTempo
         for (i in 0 until entries.size) {
-            for (j in 0 until entries[i].second.beats.toInt()) {
-                result.add(tempo)
-                tempo += entries[i].second.tempoOffset
-            }
+            try {
+                var tempo = entries[i].second.startTempo
+                for (j in 0 until entries[i].second.beats.toInt()) {
+                    result.add(tempo)
+                    tempo += entries[i].second.tempoOffset
+                }
+            } catch (_: IndexOutOfBoundsException) {}
         }
         return result.toTypedArray().toDoubleArray()
     }
@@ -39,7 +41,9 @@ class Program {
             for (entry in 1 until entries.size) {
                 entries[entry - 1].second.beats = (entries[entry].first - entries[entry - 1].first) * 4  // 4 as in 4/4 time signature
                 if (entries[entry].second.tempoOffset != 0.0)
-                    entries[entry - 1].second.tempoOffset = (entries[entry].second.startTempo - entries[entry - 1].second.startTempo) / (entries[entry - 1].second.beats)
+                    entries[entry - 1].second.tempoOffset = (entries[entry].second.startTempo - entries[entry - 1].second.startTempo) / entries[entry - 1].second.beats
+                if (entries[entry].second.tempoOffset == Double.POSITIVE_INFINITY || entries[entry].second.tempoOffset == Double.NEGATIVE_INFINITY)
+                    entries[entry].second.tempoOffset = 0.0
             }
             entries.last().second.beats = 1
             entries.last().second.tempoOffset = 0.0
