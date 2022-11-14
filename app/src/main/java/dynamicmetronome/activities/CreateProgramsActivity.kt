@@ -96,6 +96,7 @@ class CreateProgramsActivity : Activity() {
             // Rebuild the graph
             buildGraph()
         }
+        buildGraph()
     }
 
     private fun buildGraph() {
