@@ -50,6 +50,7 @@ class CreateProgramsActivity : Activity() {
             )
             popup.showAtLocation(createProgramActivity.root, Gravity.CENTER, 0, 0)
         }
+
         // Set up the confirm button's actions
         createProgramActivity.ConfirmButton.setOnClickListener {
             // Save the program to the appropriate file
@@ -61,14 +62,14 @@ class CreateProgramsActivity : Activity() {
                             Context.MODE_PRIVATE
                         )
                     )
-                    file.writeObject(mainMetronome)
+                    file.writeObject(mainMetronome.program)
                     file.close()
                 } catch (e: IOException) {
                     Toast.makeText(applicationContext, "Failed to save file!", Toast.LENGTH_SHORT)
                         .show()
                 }
-            }
-            exit()
+                exit()
+            } else Toast.makeText(applicationContext, "Program does not have a name.", Toast.LENGTH_SHORT).show()
         }
 
         createProgramActivity.ExecuteProgram.setOnClickListener {
@@ -113,7 +114,8 @@ class CreateProgramsActivity : Activity() {
                 if (instructions[i].second.startTempo != instructions[i + 1].second.startTempo &&
                     instructions[i].second.tempoOffset == 0.0)
                     series.appendData(
-                        DataPoint(instructions[i + 1].first.toDouble(),
+                        DataPoint(
+                            instructions[i + 1].first.toDouble(),
                             instructions[i].second.startTempo),
                         false,
                         Int.MAX_VALUE,

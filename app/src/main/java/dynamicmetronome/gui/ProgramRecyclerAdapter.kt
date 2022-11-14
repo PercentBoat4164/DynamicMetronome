@@ -10,6 +10,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import dynamicmetronome.activities.R
 import dynamicmetronome.metronome.Metronome
+import dynamicmetronome.metronome.Program
+import java.io.ObjectInputStream
 
 class ProgramRecyclerAdapter(
     private val modelList: ArrayList<ProgramListData>,
@@ -45,8 +47,8 @@ class ProgramRecyclerAdapter(
             applicationContext.deleteFile(holder.nameView.text.toString() + ".met")
         }
         holder.play.setOnClickListener {
-//            metronome.loadProgram(holder.nameView.text.toString() + ".met")
-            metronome.togglePlaying()
+            metronome.program = ObjectInputStream(applicationContext.openFileInput(holder.nameView.text.toString() + ".met")).readObject() as Program
+            metronome.executeProgram()
         }
     }
 

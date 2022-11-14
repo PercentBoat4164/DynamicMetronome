@@ -1,8 +1,10 @@
 package dynamicmetronome.metronome
 
-data class Instruction(val startTempo: Double, var tempoOffset: Double, var beats: Long)
+import java.io.Serializable
 
-class Program {
+data class Instruction(val startTempo: Double, var tempoOffset: Double, var beats: Long) : Serializable
+
+class Program : Serializable {
     private var instructions: MutableMap<Long, Instruction> = mutableMapOf()
     var name = ""
 
