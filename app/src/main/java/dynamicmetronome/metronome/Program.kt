@@ -57,4 +57,8 @@ class Program : Serializable {
         instructions.clear()
         name = ""
     }
+
+    fun length(): Int {
+        return instructions.size
+    }
 }

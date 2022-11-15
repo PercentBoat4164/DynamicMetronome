@@ -8,8 +8,6 @@ import android.view.Gravity
 import android.widget.PopupWindow
 import android.widget.Toast
 import androidx.databinding.DataBindingUtil
-import com.jjoe64.graphview.series.DataPoint
-import com.jjoe64.graphview.series.LineGraphSeries
 import dynamicmetronome.activities.databinding.CreateProgramsActivityBinding
 import dynamicmetronome.activities.databinding.EditorPopupBinding
 import java.io.IOException
@@ -19,23 +17,21 @@ class CreateProgramsActivity : Activity() {
     private lateinit var createProgramActivity: CreateProgramsActivityBinding
     private lateinit var editorPopup: EditorPopupBinding
     private lateinit var popup: PopupWindow
-    private var series = LineGraphSeries(mutableListOf(DataPoint(0.0, 0.0)).toTypedArray())
-    private var playHead = LineGraphSeries(mutableListOf(DataPoint(0.0, 0.0)).toTypedArray())
     private var playHeadLocation = 0.0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         mainMetronome.setOnProgramStartCallback {
-            playHeadLocation = 0.0
-//            mainMetronome.setOnClickCallback { stepPlayHead() }
+            createProgramActivity.ProgramDisplay.resetPlayHead()
+            mainMetronome.setOnClickCallback { createProgramActivity.ProgramDisplay.movePlayHead() }
         }
 
         editorPopup = DataBindingUtil.setContentView(this, R.layout.editor_popup)
         createProgramActivity =
             DataBindingUtil.setContentView(this, R.layout.create_programs_activity)
 
-        createProgramActivity.Graph.addSeries(series)
+//        createProgramActivity.Graph.addSeries(series)
         val programName = mainMetronome.program.name
         if (programName.isNotEmpty()) createProgramActivity.ProgramName.setText(programName)
 
@@ -94,54 +90,15 @@ class CreateProgramsActivity : Activity() {
             }
             popup.dismiss()
             // Rebuild the graph
-            buildGraph()
+            createProgramActivity.ProgramDisplay.setProgram(mainMetronome.program)
         }
-        buildGraph()
-    }
-
-    private fun buildGraph() {
-        createProgramActivity.Graph.removeSeries(series)
-        series = LineGraphSeries()
-        series.dataPointsRadius = 100.0f
-        val instructions = mainMetronome.program.getInstructionsAndBars()
-        for (i in instructions.indices) {
-            series.appendData(
-                DataPoint(instructions[i].first.toDouble(), instructions[i].second.startTempo),
-                true,
-                Int.MAX_VALUE,
-                true)
-            try {  // This exception will always be triggered on the last run of this loop.
-                // If there is not interpolation and there is a change in tempo.
-                if (instructions[i].second.startTempo != instructions[i + 1].second.startTempo &&
-                    instructions[i].second.tempoOffset == 0.0)
-                    series.appendData(
-                        DataPoint(
-                            instructions[i + 1].first.toDouble(),
-                            instructions[i].second.startTempo),
-                        false,
-                        Int.MAX_VALUE,
-                        true)
-            } catch (_: IndexOutOfBoundsException) {}
-        }
-        createProgramActivity.Graph.addSeries(series)
-    }
-
-    private fun stepPlayHead() {
-        playHeadLocation += 0.25
-        createProgramActivity.Graph.removeSeries(playHead)
-        playHead = LineGraphSeries(
-            mutableListOf(
-                DataPoint(playHeadLocation, 0.0),
-                DataPoint(
-                    playHeadLocation,
-                    120.0)).toTypedArray())
-        createProgramActivity.Graph.addSeries(playHead)
+        createProgramActivity.ProgramDisplay.setProgram(mainMetronome.program)
+        createProgramActivity.ProgramDisplay.resetPlayHead()
     }
 
     private fun exit() {
         mainMetronome.stop()
         mainMetronome.program.clear()
-        createProgramActivity.Graph.removeAllSeries()
         createProgramActivity.ProgramName.setText("")
         editorPopup.BarNumberInputField.setText("")
         editorPopup.TempoInputField.setText("")

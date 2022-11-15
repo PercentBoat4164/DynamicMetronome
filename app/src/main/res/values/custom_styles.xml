@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="ProgramDisplay">
+        <attr name="backgroundColor" format="color"/>
+        <attr name="beatColor" format="color"/>
+        <attr name="barColor" format="color"/>
+        <attr name="axisColor" format="color"/>
+        <attr name="programColor" format="color"/>
+        <attr name="playHeadColor" format="color"/>
+        <attr name="tempoColor" format="color"/>
+        <attr name="legendColor" format="color"/>
+    </declare-styleable>
+</resources>
