@@ -87,6 +87,9 @@ class CreateProgramsActivity : Activity() {
             } catch (e: NumberFormatException) {
                 Toast.makeText(this, "Some inputs are missing.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
+            } catch (e: NegativeArraySizeException) {
+                Toast.makeText(this, "Bar cannot be less than 1.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
             }
             popup.dismiss()
             // Rebuild the graph

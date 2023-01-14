@@ -10,8 +10,7 @@ import android.util.AttributeSet
 import android.view.View
 import dynamicmetronome.activities.R
 import dynamicmetronome.metronome.Program
-import kotlin.math.max
-import kotlin.math.min
+import kotlin.math.*
 
 class ProgramDisplay @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
@@ -73,9 +72,10 @@ class ProgramDisplay @JvmOverloads constructor(
         var graphVerticalScaleTop = 0f
         var graphVerticalScaleBottom = Float.MAX_VALUE
         for (beat in program) {
-            graphVerticalScaleTop = max(graphVerticalScaleTop, beat.second)
-            graphVerticalScaleBottom = min(graphVerticalScaleBottom, beat.second)
+            graphVerticalScaleTop = max(graphVerticalScaleTop, abs(beat.second))
+            graphVerticalScaleBottom = min(graphVerticalScaleBottom, abs(beat.second))
         }
+        if (graphVerticalScaleBottom == Float.MAX_VALUE) graphVerticalScaleBottom = 0.0f
 
         legendPaint.getTextBounds(graphVerticalScaleTop.toString(), 0, graphVerticalScaleTop.toString().length, maxVerticalTextBounds)
         horizontalPadding = maxVerticalTextBounds.width().toFloat()
@@ -99,9 +99,12 @@ class ProgramDisplay @JvmOverloads constructor(
         val graphBottom = height.toFloat() - verticalPadding
         val beatWidth = (graphRight - graphLeft) / graphHorizontalScale
 
+        var minBarWidth = Double.MAX_VALUE
+        for (i in bars.indices) minBarWidth = min(minBarWidth, bars[i].toDouble() * beatWidth)
+
         val drawProgram = ArrayList<Pair<Float, Float>>(program.size)
         for (beat in program) drawProgram.add(Pair(graphLeft + beat.first * beatWidth,
-            (beat.second - graphVerticalScaleBottom) / (graphVerticalScaleTop - graphVerticalScaleBottom) * (graphTop - graphBottom) + graphBottom))
+            beat.second.sign * ((abs(beat.second) - graphVerticalScaleBottom) / (graphVerticalScaleTop - graphVerticalScaleBottom) * (graphTop - graphBottom) + graphBottom)))
 
         var position: Float
 
@@ -109,35 +112,43 @@ class ProgramDisplay @JvmOverloads constructor(
         canvas.drawColor(backgroundColor)
 
         // Draw vertical legend and lines
-        for (i in graphVerticalScaleBottom.toInt() until graphVerticalScaleTop.toInt() step 10) {
+        for (i in floor(graphVerticalScaleBottom.toInt() / 10.0).toInt() * 10 + 10 until graphVerticalScaleTop.toInt() step 10) {
             position = (i - graphVerticalScaleBottom) / (graphVerticalScaleTop - graphVerticalScaleBottom) * (graphTop - graphBottom) + graphBottom
             canvas.drawText(i.toString(), 0f,  position - maxVerticalTextBounds.exactCenterY(), legendPaint)
             canvas.drawLine(graphLeft, position, graphRight, position, tempoPaint)
         }
         canvas.drawText(graphVerticalScaleTop.toInt().toString(), 0f,  0f + maxVerticalTextBounds.height(), legendPaint)
         canvas.drawLine(graphLeft, 0f, graphRight, 0f, tempoPaint)
+        canvas.drawText(graphVerticalScaleBottom.toInt().toString(), 0f,  graphBottom, legendPaint)
 
         position = graphLeft
 
-        // Draw horizontal lines
-        for (i in bars.indices) {
-            canvas.drawLine(position, graphBottom, position, graphTop, barPaint)
-            for (beat in 1..bars[i]) {
-                position += beatWidth
-                canvas.drawLine(position, graphBottom, position, graphTop, beatPaint)
-            }
-        }
-
-        // Draw horizontal legend
-        position = graphLeft
+        // Draw horizontal legend and lines
         canvas.rotate(90f)
-        for (bar in bars.indices) {
-            for (beat in 1..bars[bar]) {
-                canvas.drawText("${bar+1}:$beat", graphBottom + pointRadius, -position - maxHorizontalTextBounds.exactCenterY(), legendPaint)
-                position += beatWidth
+        if (beatWidth >= maxHorizontalTextBounds.height()) {
+            for (i in bars.indices) {
+                canvas.drawLine(graphBottom, -position, graphTop, -position, barPaint)
+//                canvas.drawText("${i+1}:1", graphBottom + pointRadius, -position - maxHorizontalTextBounds.exactCenterY(), legendPaint)
+                for (beat in 1..bars[i]) {
+                    canvas.drawText("${i+1}:$beat", graphBottom + pointRadius, -position - maxHorizontalTextBounds.exactCenterY(), legendPaint)
+                    position += beatWidth
+                    canvas.drawLine(graphBottom, -position, graphTop, -position, beatPaint)
+                }
             }
+            canvas.drawText("${bars.size+1}:1", graphBottom + pointRadius, -position + maxHorizontalTextBounds.height(), legendPaint)
+        } else {
+            if (minBarWidth >= maxHorizontalTextBounds.height()) {
+                for (i in bars.indices) {
+                    canvas.drawLine(graphBottom, -position, graphTop, -position, beatPaint)
+                    canvas.drawText("${i+1}", graphBottom + pointRadius, -position - maxHorizontalTextBounds.exactCenterY(), legendPaint)
+                    position += bars[i] * beatWidth
+                }
+            }
+            for (i in drawProgram) {
+                canvas.drawLine(graphBottom, -i.first, graphTop, -i.first, barPaint)
+            }
+            canvas.drawText("${bars.size+1}", graphBottom + pointRadius, -position + maxHorizontalTextBounds.height(), legendPaint)
         }
-        canvas.drawText("${bars.size+1}:1", graphBottom + pointRadius, -position + maxHorizontalTextBounds.height(), legendPaint)
         canvas.rotate(-90f)
 
         // Draw axes
@@ -145,20 +156,37 @@ class ProgramDisplay @JvmOverloads constructor(
         canvas.drawLine(graphLeft + axisPaint.strokeWidth / 2, graphBottom, graphLeft + axisPaint.strokeWidth / 2, graphTop, axisPaint)
 
         // Draw play head
-        canvas.drawLine(axisPaint.strokeWidth + graphLeft + playHead * beatWidth, graphBottom, axisPaint.strokeWidth + graphLeft + playHead * beatWidth, graphTop, playHeadPaint)
+        canvas.drawLine(axisPaint.strokeWidth / 2 + graphLeft + playHead * beatWidth, graphBottom, axisPaint.strokeWidth / 2 + graphLeft + playHead * beatWidth, graphTop, playHeadPaint)
 
         // Draw program
         for (beat in 0..program.size - 2) {
-            canvas.drawLine(
-                drawProgram[beat].first,
-                drawProgram[beat].second,
-                drawProgram[beat + 1].first,
-                drawProgram[beat + 1].second,
-                programPaint
-            )
+            if (drawProgram[beat].second != abs(drawProgram[beat].second))  // Interpolation
+                canvas.drawLine(
+                    drawProgram[beat].first,
+                    abs(drawProgram[beat].second),
+                    drawProgram[beat + 1].first,
+                    abs(drawProgram[beat + 1].second),
+                    programPaint
+                )
+            else {  // No interpolation
+                canvas.drawLine(
+                    drawProgram[beat].first,
+                    drawProgram[beat].second,
+                    drawProgram[beat].first,
+                    abs(drawProgram[beat + 1].second),
+                    programPaint
+                )
+                canvas.drawLine(
+                    drawProgram[beat].first,
+                    drawProgram[beat + 1].second,
+                    drawProgram[beat + 1].first,
+                    abs(drawProgram[beat + 1].second),
+                    programPaint
+                )
+            }
             canvas.drawCircle(
                 drawProgram[beat].first,
-                drawProgram[beat].second,
+                abs(drawProgram[beat].second),
                 pointRadius,
                 programPaint)
         }
@@ -174,18 +202,15 @@ class ProgramDisplay @JvmOverloads constructor(
         val instructions = inputProgram.getInstructionsAndBars()
         val programData = ArrayList<Pair<Float, Float>>(inputProgram.length())
         val barsData = ArrayList<Long>(inputProgram.length())
-        var cumulativeBeats = 0f
         for (i in instructions.indices) {
-            for (j in 0 until instructions[i].first) barsData.add(4)
-            cumulativeBeats += instructions[i].first.toFloat() * 4
-            programData.add(Pair(cumulativeBeats, instructions[i].second.startTempo.toFloat()))
-            try {  // This exception will always be triggered on the last run of this loop.
-                // If there is not interpolation and there is a change in tempo.
-                if (instructions[i].second.startTempo != instructions[i + 1].second.startTempo &&
-                    instructions[i].second.tempoOffset == 0.0)
-                    programData.add(Pair(cumulativeBeats, instructions[i].second.startTempo.toFloat()))
-            } catch (_: IndexOutOfBoundsException) {}
+            for (j in 0 until instructions[i].first - barsData.size) barsData.add(4)
+            var cumulativeBeats = 0f
+            for (beats in barsData) cumulativeBeats += beats
+            programData.add(Pair(cumulativeBeats, if (instructions[i].second.tempoOffset == 0.0) instructions[i].second.startTempo.toFloat() else -instructions[i].second.startTempo.toFloat()))
         }
+        var cumulativeBeats = 0f
+        for (beats in barsData) cumulativeBeats += beats
+        if (program.isNotEmpty()) programData.add(Pair(cumulativeBeats, if (instructions.last().second.tempoOffset == 0.0) instructions.last().second.startTempo.toFloat() else -instructions.last().second.startTempo.toFloat()))
         bars = barsData.toTypedArray()
         program = programData.toTypedArray()
         draw()

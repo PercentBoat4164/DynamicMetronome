@@ -9,12 +9,14 @@ class Program : Serializable {
     var name = ""
 
     fun addOrChangeInstruction(bar: Long, tempo: Double, interpolation: Boolean) {
+        if (bar < 0) throw NegativeArraySizeException()
         if (tempo == 0.0) instructions.remove(bar)
         else {
             instructions[bar] = Instruction(
-              tempo,
-              if (interpolation) Double.POSITIVE_INFINITY else 0.0,
-              Long.MAX_VALUE)
+                tempo,
+                if (interpolation) Double.POSITIVE_INFINITY else 0.0,
+                Long.MAX_VALUE
+            )
         }
     }
 
