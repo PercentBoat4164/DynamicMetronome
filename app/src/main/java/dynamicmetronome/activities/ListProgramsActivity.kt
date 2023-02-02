@@ -38,7 +38,7 @@ class ListProgramsActivity : Activity() {
         val files = applicationContext.filesDir.listFiles()?.toCollection(ArrayList())
         val data = ArrayList<ProgramListData>()
         for (file in files!!) data.add(ProgramListData(file.name.substring(0, file.name.length - 4)))
-        val adapter = ProgramRecyclerAdapter(data, this, mainMetronome)
+        val adapter = ProgramRecyclerAdapter(data, this)
         programsActivity.ProgramList.adapter = adapter
     }
 }

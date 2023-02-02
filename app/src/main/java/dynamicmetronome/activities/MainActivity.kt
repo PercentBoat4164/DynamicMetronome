@@ -54,7 +54,14 @@ class MainActivity : AppCompatActivity() {
         }
 
         mainActivity.StartStopButton.setOnClickListener {
-            mainMetronome.togglePlaying()
+            mainMetronome.setProgram(null)
+            if (mainMetronome.playing) {
+                mainActivity.StartStopButton.setImageResource(android.R.drawable.ic_media_play)
+                mainMetronome.stop()
+            } else {
+                mainActivity.StartStopButton.setImageResource(android.R.drawable.ic_media_pause)
+                mainMetronome.start()
+            }
         }
 
         mainActivity.QuarterVolume.setOnSeekBarChangeListener(object :
@@ -90,6 +97,7 @@ class MainActivity : AppCompatActivity() {
         mainActivity.TempoSeekbar.progress = (STARTING_TEMPO.toFloat() / (MAX_TEMPO) * 100).toInt()
 
         mainActivity.ProgramsButton.setOnClickListener {
+            mainActivity.StartStopButton.setImageResource(android.R.drawable.ic_media_play)
             mainMetronome.stop()
             startActivity(Intent(this, ListProgramsActivity::class.java))
         }

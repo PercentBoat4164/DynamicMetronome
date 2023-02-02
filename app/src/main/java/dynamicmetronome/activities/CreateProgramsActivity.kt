@@ -10,6 +10,7 @@ import android.widget.Toast
 import androidx.databinding.DataBindingUtil
 import dynamicmetronome.activities.databinding.CreateProgramsActivityBinding
 import dynamicmetronome.activities.databinding.EditorPopupBinding
+import dynamicmetronome.metronome.Program
 import java.io.IOException
 import java.io.ObjectOutputStream
 
@@ -17,22 +18,26 @@ class CreateProgramsActivity : Activity() {
     private lateinit var createProgramActivity: CreateProgramsActivityBinding
     private lateinit var editorPopup: EditorPopupBinding
     private lateinit var popup: PopupWindow
-    private var playHeadLocation = 0.0
+    private var program = Program()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        mainMetronome.setOnProgramStartCallback {
-            createProgramActivity.ProgramDisplay.resetPlayHead()
-            mainMetronome.setOnClickCallback { createProgramActivity.ProgramDisplay.movePlayHead() }
-        }
 
         editorPopup = DataBindingUtil.setContentView(this, R.layout.editor_popup)
         createProgramActivity =
             DataBindingUtil.setContentView(this, R.layout.create_programs_activity)
 
-//        createProgramActivity.Graph.addSeries(series)
-        val programName = mainMetronome.program.name
+        // Synchronize with mainMetronome
+        if (mainMetronome.playing) {
+            createProgramActivity.ExecuteProgram.setImageResource(android.R.drawable.ic_media_pause)
+        }
+        mainMetronome.setOnStopCallback {
+            createProgramActivity.ExecuteProgram.setImageResource(android.R.drawable.ic_media_play)
+            createProgramActivity.ProgramDisplay.resetPlayHead()
+        }
+        if (mainMetronome.getProgram() != null) program = mainMetronome.getProgram()!!
+        mainMetronome.setOnClickCallback { createProgramActivity.ProgramDisplay.movePlayHead() }
+        val programName = program.name
         if (programName.isNotEmpty()) createProgramActivity.ProgramName.setText(programName)
 
         // Set up the new element button's actions
@@ -58,7 +63,7 @@ class CreateProgramsActivity : Activity() {
                             Context.MODE_PRIVATE
                         )
                     )
-                    file.writeObject(mainMetronome.program)
+                    file.writeObject(program)
                     file.close()
                 } catch (e: IOException) {
                     Toast.makeText(applicationContext, "Failed to save file!", Toast.LENGTH_SHORT)
@@ -69,7 +74,16 @@ class CreateProgramsActivity : Activity() {
         }
 
         createProgramActivity.ExecuteProgram.setOnClickListener {
-            mainMetronome.executeProgram()
+            if (mainMetronome.getProgram() == null) {
+                mainMetronome.setProgram(program)
+            }
+            if (mainMetronome.playing && mainMetronome.getProgram()!!.length() > 0) {
+                createProgramActivity.ExecuteProgram.setImageResource(android.R.drawable.ic_media_play)
+                mainMetronome.stop()
+            } else {
+                createProgramActivity.ExecuteProgram.setImageResource(android.R.drawable.ic_media_pause)
+                mainMetronome.start()
+            }
         }
 
         createProgramActivity.CancelButton.setOnClickListener {
@@ -79,7 +93,7 @@ class CreateProgramsActivity : Activity() {
         /** Popup window initialization*/
         editorPopup.ConfirmButton.setOnClickListener {
             try {
-                mainMetronome.program.addOrChangeInstruction(
+                program.addOrChangeInstruction(
                     editorPopup.BarNumberInputField.text.toString().toLong(),
                     editorPopup.TempoInputField.text.toString().trim().split("\\s+".toRegex())[0].toDoubleOrNull()!!,
                     editorPopup.Interpolate.isChecked
@@ -93,16 +107,16 @@ class CreateProgramsActivity : Activity() {
             }
             popup.dismiss()
             // Rebuild the graph
-            createProgramActivity.ProgramDisplay.setProgram(mainMetronome.program)
+            createProgramActivity.ProgramDisplay.setProgram(program)
         }
-        createProgramActivity.ProgramDisplay.setProgram(mainMetronome.program)
+        createProgramActivity.ProgramDisplay.setProgram(program)
         createProgramActivity.ProgramDisplay.resetPlayHead()
     }
 
     private fun exit() {
+        createProgramActivity.ExecuteProgram.setImageResource(android.R.drawable.ic_media_play)
+        mainMetronome.setProgram(null)
         mainMetronome.stop()
-        mainMetronome.program.clear()
-        createProgramActivity.ProgramName.setText("")
         editorPopup.BarNumberInputField.setText("")
         editorPopup.TempoInputField.setText("")
         finish()

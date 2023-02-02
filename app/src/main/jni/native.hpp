@@ -6,7 +6,7 @@ struct JVMHolder {
 public:
     JavaVM *vm;
     JNIEnv *clickCallbackEnv;
-    JNIEnv *programEndCallbackEnv;
+    JNIEnv *stopCallbackEnv;
 
     static JVMHolder &getInst();
 

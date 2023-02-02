@@ -9,14 +9,13 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import dynamicmetronome.activities.R
-import dynamicmetronome.metronome.Metronome
+import dynamicmetronome.activities.mainMetronome
 import dynamicmetronome.metronome.Program
 import java.io.ObjectInputStream
 
 class ProgramRecyclerAdapter(
     private val modelList: ArrayList<ProgramListData>,
     private val applicationContext: Context,
-    private var metronome: Metronome
 ) : RecyclerView.Adapter<ProgramRecyclerAdapter.ViewHolder>() {
 
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -47,8 +46,18 @@ class ProgramRecyclerAdapter(
             applicationContext.deleteFile(holder.nameView.text.toString() + ".met")
         }
         holder.play.setOnClickListener {
-            metronome.program = ObjectInputStream(applicationContext.openFileInput(holder.nameView.text.toString() + ".met")).readObject() as Program
-            metronome.executeProgram()
+            val name = holder.nameView.text.toString()
+            if (mainMetronome.getProgram()?.name != name) {
+                mainMetronome.setProgram(ObjectInputStream(applicationContext.openFileInput("$name.met")).readObject() as Program)
+            }
+            if (mainMetronome.playing) {
+                holder.play.setImageResource(android.R.drawable.ic_media_play)
+                mainMetronome.stop()
+            } else {
+                mainMetronome.setOnStopCallback{ holder.play.setImageResource(android.R.drawable.ic_media_play) }
+                holder.play.setImageResource(android.R.drawable.ic_media_pause)
+                mainMetronome.start()
+            }
         }
     }
 

@@ -4,25 +4,7 @@
 
 #include <jni.h>
 #include <thread>
-
-void Metronome::executeProgram(std::vector<double> t_instructions) {
-    player.stop();
-    instruction = 0;
-    player.setTempo(t_instructions[0]);
-    std::function<void()> oldCallback = player._getOnClickCallback();
-    player._setOnClickCallback([this, t_instructions, oldCallback] {
-        if (++instruction == t_instructions.size()) {
-            player._setOnClickCallback([this, oldCallback] {
-                m_programEndCondition.notify_one();
-                oldCallback();
-                player._setOnClickCallback(oldCallback);
-            });
-        }
-        player.setTempo(t_instructions[instruction]);
-        oldCallback();
-    });
-    player.start();
-}
+#include <utility>
 
 extern "C"
 JNIEXPORT void JNICALL
@@ -45,32 +27,34 @@ Java_dynamicmetronome_metronome_Metronome_create(JNIEnv *env, jobject thiz) {
     jobject globalThiz = env->NewGlobalRef(thiz);
 
     // Extract the callback from the Java class.
-    metronome->player._setOnClickCallback([metronome, globalThiz] {
+    metronome->player.setOnClickCallback([metronome, globalThiz] {
         jobject obj = JVMHolder::getInst().clickCallbackEnv->NewLocalRef(globalThiz);
         jclass cls = JVMHolder::getInst().clickCallbackEnv->GetObjectClass(obj);
         if (cls) {
-            jmethodID method = JVMHolder::getInst().clickCallbackEnv->GetMethodID(cls, "clickCallback", "()V");
+            jmethodID method = JVMHolder::getInst().clickCallbackEnv->GetMethodID(cls,
+                                                                                  "clickCallback",
+                                                                                  "()V");
             if (method)
-                metronome->player._setOnClickCallback([method, obj] {
+                metronome->player.setOnClickCallback([method, obj] {
                     JVMHolder::getInst().clickCallbackEnv->CallVoidMethod(obj, method);
+                });
+        }
+    })
+    ;
+    // Set up the m_onStopCallback()
+    metronome->player.setOnStopCallback([metronome, globalThiz] {
+        jobject obj = JVMHolder::getInst().stopCallbackEnv->NewLocalRef(globalThiz);
+        jclass cls = JVMHolder::getInst().stopCallbackEnv->GetObjectClass(obj);
+        if (cls) {
+            jmethodID method = JVMHolder::getInst().stopCallbackEnv->GetMethodID(cls, "stopCallback", "()V");
+            if (method)
+                metronome->player.setOnStopCallback([method, obj] {
+                    JVMHolder::getInst().stopCallbackEnv->CallVoidMethod(obj, method);
                 });
         }
     });
     metronome->player._init();
 
-    // Set up the programEndCallback()
-    metronome->m_onProgramEndCallback = [metronome, globalThiz] {
-        jobject obj = JVMHolder::getInst().programEndCallbackEnv->NewLocalRef(globalThiz);
-        jclass cls = JVMHolder::getInst().programEndCallbackEnv->GetObjectClass(obj);
-        if (cls) {
-            jmethodID method = JVMHolder::getInst().programEndCallbackEnv->GetMethodID(cls, "programEndCallback", "()V");
-            if (method)
-                metronome->m_onProgramEndCallback = [method, obj] {
-                    JVMHolder::getInst().programEndCallbackEnv->CallVoidMethod(obj, method);
-                };
-        }
-    };
-    metronome->m_programEndCondition.notify_one();
     metronome->player.setVolume(1.0/3);
 
     // Return a pointer to the metronome for future use.
@@ -97,13 +81,19 @@ Java_dynamicmetronome_metronome_Metronome_stop(JNIEnv *env, jobject thiz, jlong 
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_dynamicmetronome_metronome_Metronome_executeProgram(JNIEnv *env, jobject thiz, jlong handle,
-                                                         jdoubleArray instructions) {
+Java_dynamicmetronome_metronome_Metronome_setProgram(JNIEnv *env, jobject thiz, jlong handle,
+                                                     jdoubleArray instructions) {
     auto *javaSoundData = env->GetDoubleArrayElements(instructions, nullptr);
     std::vector<double> nativeInstructions(env->GetArrayLength(instructions));
     for (int i = 0; i < nativeInstructions.size(); ++i)
-        nativeInstructions[i] = (float) javaSoundData[i];
-    reinterpret_cast<Metronome *>(handle)->executeProgram(nativeInstructions);
+        nativeInstructions[i] = (double) javaSoundData[i];
+    reinterpret_cast<Metronome *>(handle)->player.setInstructions(nativeInstructions);
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_dynamicmetronome_metronome_Metronome_clearProgram(JNIEnv *env, jobject thiz, jlong handle) {
+    reinterpret_cast<Metronome *>(handle)->player.setInstructions({});
 }
 
 extern "C"

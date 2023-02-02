@@ -14,13 +14,12 @@ import java.io.Closeable
  * Contains a handle to the C++ object data that is used by this class on the C++ side.
  */
 class Metronome : Closeable {
-    var program = Program()
+    private var program: Program? = null
     private var onClickCallback: () -> Unit = {}
-    private var onProgramStartCallback: () -> Unit = {}
-    private var onProgramEndCallback: () -> Unit = {}
+    private var onStopCallback: () -> Unit = {}
 
     private val handle: Long = create()
-    private var playing = false
+    var playing = false
 
     // Destructor
     override fun close() = destroy(handle)
@@ -33,10 +32,6 @@ class Metronome : Closeable {
     fun stop() {
         playing = false
         stop(handle)
-    }
-
-    fun togglePlaying() {
-        if (!playing) start() else stop()
     }
 
     fun useSound(stream: AssetFileDescriptor) {
@@ -110,9 +105,11 @@ class Metronome : Closeable {
         }.start()
     }
 
-    fun executeProgram() {
-        programStartCallback()
-        executeProgram(handle, program.getTempos())
+    fun getProgram(): Program? = program
+
+    fun setProgram(program: Program?) {
+        this.program = program
+        setProgram(handle, program?.getTempos() ?: doubleArrayOf())
     }
 
     fun setTempo(tempo: Double) = setTempo(handle, tempo)
@@ -122,25 +119,23 @@ class Metronome : Closeable {
     fun setOnClickCallback(function: () -> Unit) {
         onClickCallback = function
     }
-
-    fun setOnProgramStartCallback(function: () -> Unit) {
-        onProgramStartCallback = function
-    }
-
-    fun setOnProgramEndCallback(function: () -> Unit) {
-        onProgramEndCallback = function
+    fun setOnStopCallback(function: () -> Unit) {
+        onStopCallback = function
     }
 
     private fun clickCallback() = onClickCallback()
-    private fun programEndCallback() = onProgramEndCallback()
-    private fun programStartCallback() = onProgramStartCallback()
+    private fun stopCallback() {
+        stop()
+        onStopCallback()
+    }
 
     private external fun create(): Long
     private external fun destroy(handle: Long)
     private external fun start(handle: Long)
     private external fun stop(handle: Long)
     private external fun useSound(handle: Long, bytes: FloatArray)
-    private external fun executeProgram(handle: Long, instructions: DoubleArray)
+    private external fun setProgram(handle: Long, instructions: DoubleArray)
+    private external fun clearProgram(handle: Long)
     private external fun setTempo(handle: Long, tempo: Double)
     private external fun setVolume(handle: Long, volume: Float)
 }
