@@ -11,18 +11,22 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import dynamicmetronome.activities.R
 import dynamicmetronome.activities.mainMetronome
 import dynamicmetronome.metronome.Program
+import java.io.FileInputStream
 import java.io.ObjectInputStream
+import kotlin.io.path.Path
+import kotlin.io.path.deleteIfExists
 
 class ProgramRecyclerAdapter(
     private val modelList: ArrayList<ProgramListData>,
-    private val applicationContext: Context,
+    applicationContext: Context,
 ) : RecyclerView.Adapter<ProgramRecyclerAdapter.ViewHolder>() {
-
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val nameView: TextView = itemView.findViewById(R.id.ProgramNameView)
         val delete: Button = itemView.findViewById(R.id.Delete)
         val play: FloatingActionButton = itemView.findViewById(R.id.StartProgram)
     }
+
+    private val path = Path(applicationContext.filesDir.path + "/Programs/").toString()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view =
@@ -32,7 +36,9 @@ class ProgramRecyclerAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val itemsViewModel = modelList[position]
+
         holder.nameView.text = itemsViewModel.name
+
         holder.delete.setOnClickListener {
             var index = 0
             for (i in 0..modelList.size) {
@@ -43,12 +49,13 @@ class ProgramRecyclerAdapter(
             }
             modelList.removeAt(index)
             this.notifyItemRemoved(index)
-            applicationContext.deleteFile(holder.nameView.text.toString() + ".met")
+            Path(path + holder.nameView.text.toString() + ".met").deleteIfExists()
         }
+
         holder.play.setOnClickListener {
             val name = holder.nameView.text.toString()
             if (mainMetronome.getProgram()?.name != name) {
-                mainMetronome.setProgram(ObjectInputStream(applicationContext.openFileInput("$name.met")).readObject() as Program)
+                mainMetronome.setProgram(ObjectInputStream(FileInputStream("$path/$name.met")).readObject() as Program)
             }
             if (mainMetronome.playing) {
                 holder.play.setImageResource(android.R.drawable.ic_media_play)

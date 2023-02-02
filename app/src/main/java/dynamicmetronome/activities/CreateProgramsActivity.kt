@@ -1,7 +1,6 @@
 package dynamicmetronome.activities
 
 import android.app.Activity
-import android.content.Context
 import android.content.res.Resources
 import android.os.Bundle
 import android.view.Gravity
@@ -11,6 +10,8 @@ import androidx.databinding.DataBindingUtil
 import dynamicmetronome.activities.databinding.CreateProgramsActivityBinding
 import dynamicmetronome.activities.databinding.EditorPopupBinding
 import dynamicmetronome.metronome.Program
+import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
 import java.io.ObjectOutputStream
 
@@ -57,12 +58,10 @@ class CreateProgramsActivity : Activity() {
             // Save the program to the appropriate file
             if (createProgramActivity.ProgramName.text.toString() != "") {
                 try {
-                    val file = ObjectOutputStream(
-                        applicationContext.openFileOutput(
-                            createProgramActivity.ProgramName.text.toString() + ".met",
-                            Context.MODE_PRIVATE
-                        )
-                    )
+                    val file = ObjectOutputStream(FileOutputStream(
+                        File(applicationContext.filesDir.toString() + "/Programs/" + createProgramActivity.ProgramName.text.toString() + ".met"),
+                        false
+                    ))
                     file.writeObject(program)
                     file.close()
                 } catch (e: IOException) {
