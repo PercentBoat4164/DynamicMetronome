@@ -32,6 +32,8 @@ public:
 
     void setOnStopCallback(std::function<void()> t_callback);
 
+    void reset();
+
 private:
     oboe::DataCallbackResult onAudioReady(oboe::AudioStream *audioStream, void *audioData, int32_t numFrames);
 

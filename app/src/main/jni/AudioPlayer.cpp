@@ -42,6 +42,7 @@ void AudioPlayer::start() {
 }
 
 void AudioPlayer::stop() {
+    m_stopCondition.notify_one();
     m_stream->requestStop();
 }
 
@@ -117,4 +118,32 @@ void AudioPlayer::_init() {
 
 void AudioPlayer::setInstructions(const std::vector<double>& t_instructions) {
     instructions = t_instructions;
+}
+
+void AudioPlayer::reset() {
+    m_stream->stop();
+    m_stream->close();
+    delete m_stream;
+
+    oboe::AudioStreamBuilder builder;
+
+    builder.setCallback(this)
+            ->setDirection(oboe::Direction::Output)
+            ->setFormat(oboe::AudioFormat::Float)
+            ->setChannelCount(oboe::ChannelCount::Stereo)
+            ->setPerformanceMode(oboe::PerformanceMode::LowLatency)
+            ->setSharingMode(oboe::SharingMode::Exclusive);
+
+    oboe::Result result{builder.openStream(&m_stream)};
+
+    if (result != oboe::Result::OK) {
+        throw std::runtime_error(
+                std::string("Error opening m_stream: ") + oboe::convertToText(result));
+    }
+
+    oboe::ResultWithValue<int32_t> setBufferSizeResult{
+            m_stream->setBufferSizeInFrames(m_stream->getFramesPerBurst() * 2)};
+    if (setBufferSizeResult) {
+        printf("New buffer size is %d frames", setBufferSizeResult.value());
+    }
 }

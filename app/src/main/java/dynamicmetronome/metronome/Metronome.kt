@@ -1,10 +1,7 @@
 package dynamicmetronome.metronome
 
 import android.content.res.AssetFileDescriptor
-import android.media.MediaCodec
-import android.media.MediaCodecList
-import android.media.MediaExtractor
-import android.media.MediaFormat
+import android.media.*
 import java.io.Closeable
 
 
@@ -13,13 +10,24 @@ import java.io.Closeable
  *
  * Contains a handle to the C++ object data that is used by this class on the C++ side.
  */
-class Metronome : Closeable {
+
+class Metronome : Closeable, AudioDeviceCallback() {
     private var program: Program? = null
     private var onClickCallback: () -> Unit = {}
     private var onStopCallback: () -> Unit = {}
 
     private val handle: Long = create()
     var playing = false
+
+    override fun onAudioDevicesAdded(addedDevices: Array<out AudioDeviceInfo>?) {
+        super.onAudioDevicesAdded(addedDevices)
+        resetPlayer(handle)
+    }
+
+    override fun onAudioDevicesRemoved(removedDevices: Array<out AudioDeviceInfo>?) {
+        super.onAudioDevicesRemoved(removedDevices)
+        resetPlayer(handle)
+    }
 
     // Destructor
     override fun close() = destroy(handle)
@@ -130,6 +138,7 @@ class Metronome : Closeable {
     }
 
     private external fun create(): Long
+    private external fun resetPlayer(handle: Long)
     private external fun destroy(handle: Long)
     private external fun start(handle: Long)
     private external fun stop(handle: Long)

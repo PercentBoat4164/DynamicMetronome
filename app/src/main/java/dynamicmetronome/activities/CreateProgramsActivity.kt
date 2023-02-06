@@ -77,7 +77,6 @@ class CreateProgramsActivity : Activity() {
                 mainMetronome.setProgram(program)
             }
             if (mainMetronome.playing && mainMetronome.getProgram()!!.length() > 0) {
-                createProgramActivity.ExecuteProgram.setImageResource(android.R.drawable.ic_media_play)
                 mainMetronome.stop()
             } else {
                 createProgramActivity.ExecuteProgram.setImageResource(android.R.drawable.ic_media_pause)
@@ -113,7 +112,6 @@ class CreateProgramsActivity : Activity() {
     }
 
     private fun exit() {
-        createProgramActivity.ExecuteProgram.setImageResource(android.R.drawable.ic_media_play)
         mainMetronome.setProgram(null)
         mainMetronome.stop()
         editorPopup.BarNumberInputField.setText("")

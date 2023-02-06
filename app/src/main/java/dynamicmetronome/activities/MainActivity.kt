@@ -1,8 +1,10 @@
 package dynamicmetronome.activities
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
+import android.media.AudioManager
 import android.os.Bundle
 import android.widget.CompoundButton
 import android.widget.NumberPicker
@@ -18,15 +20,22 @@ val mainMetronome: Metronome = Metronome()
 
 class MainActivity : AppCompatActivity() {
     lateinit var mainActivity: MainActivityBinding
+    private lateinit var audioManager: AudioManager
 
     @SuppressLint("SourceLockedOrientationActivity")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         mainActivity = DataBindingUtil.setContentView(this, R.layout.main_activity)
+        audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+
+        audioManager.registerAudioDeviceCallback(mainMetronome, null)
+
         requestedOrientation =
             ActivityInfo.SCREEN_ORIENTATION_PORTRAIT  // @todo Find a way to make the orientation not break things.
 
         mainMetronome.useSound(resources.openRawResourceFd(R.raw.metronome_sample))
+
+        mainMetronome.setOnStopCallback { mainActivity.StartStopButton.setImageResource(android.R.drawable.ic_media_play); }
 
         // Set up the main activity
         mainActivity.TempoNumberPicker.minValue = MIN_TEMPO.toInt()
@@ -56,7 +65,6 @@ class MainActivity : AppCompatActivity() {
         mainActivity.StartStopButton.setOnClickListener {
             mainMetronome.setProgram(null)
             if (mainMetronome.playing) {
-                mainActivity.StartStopButton.setImageResource(android.R.drawable.ic_media_play)
                 mainMetronome.stop()
             } else {
                 mainActivity.StartStopButton.setImageResource(android.R.drawable.ic_media_pause)
@@ -97,10 +105,14 @@ class MainActivity : AppCompatActivity() {
         mainActivity.TempoSeekbar.progress = (STARTING_TEMPO.toFloat() / (MAX_TEMPO) * 100).toInt()
 
         mainActivity.ProgramsButton.setOnClickListener {
-            mainActivity.StartStopButton.setImageResource(android.R.drawable.ic_media_play)
             mainMetronome.stop()
             startActivity(Intent(this, ListProgramsActivity::class.java))
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        audioManager.unregisterAudioDeviceCallback(mainMetronome)
     }
 
     companion object {

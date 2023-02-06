@@ -109,3 +109,8 @@ Java_dynamicmetronome_metronome_Metronome_setVolume(JNIEnv *env, jobject thiz, j
                                                     jfloat volume) {
     reinterpret_cast<Metronome *>(handle)->player.setVolume(volume);
 }
+extern "C"
+JNIEXPORT void JNICALL
+Java_dynamicmetronome_metronome_Metronome_resetPlayer(JNIEnv *env, jobject thiz, jlong handle) {
+    reinterpret_cast<Metronome *>(handle)->player.reset();
+}
