@@ -27,15 +27,13 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         mainActivity = DataBindingUtil.setContentView(this, R.layout.main_activity)
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-
         audioManager.registerAudioDeviceCallback(mainMetronome, null)
+
+        mainMetronome.useSound(resources.openRawResourceFd(R.raw.metronome_sample))
+        mainMetronome.setOnStopCallback { mainActivity.StartStopButton.setImageResource(android.R.drawable.ic_media_play); }
 
         requestedOrientation =
             ActivityInfo.SCREEN_ORIENTATION_PORTRAIT  // @todo Find a way to make the orientation not break things.
-
-        mainMetronome.useSound(resources.openRawResourceFd(R.raw.metronome_sample))
-
-        mainMetronome.setOnStopCallback { mainActivity.StartStopButton.setImageResource(android.R.drawable.ic_media_play); }
 
         // Set up the main activity
         mainActivity.TempoNumberPicker.minValue = MIN_TEMPO.toInt()

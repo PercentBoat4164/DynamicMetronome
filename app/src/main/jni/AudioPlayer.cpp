@@ -10,7 +10,8 @@ AudioPlayer::AudioPlayer() : m_sound(std::vector<float>(1, 1)) {
             ->setFormat(oboe::AudioFormat::Float)
             ->setChannelCount(oboe::ChannelCount::Stereo)
             ->setPerformanceMode(oboe::PerformanceMode::LowLatency)
-            ->setSharingMode(oboe::SharingMode::Exclusive);
+            ->setSharingMode(oboe::SharingMode::Exclusive)
+            ->setUsage(oboe::Usage::AssistanceSonification);
 
     oboe::Result result{builder.openStream(&m_stream)};
 
@@ -34,7 +35,7 @@ void AudioPlayer::start() {
     m_soundTracker = 0;
     m_playHead = 0;
     m_nextClick = m_frameNumber;
-    oboe::Result result = m_stream->requestStart();
+    oboe::Result result = m_stream->start();
     if (result != oboe::Result::OK) {
         throw std::runtime_error(
                 std::string("Error starting m_stream: ") + oboe::convertToText(result));
@@ -43,7 +44,8 @@ void AudioPlayer::start() {
 
 void AudioPlayer::stop() {
     m_stopCondition.notify_one();
-    m_stream->requestStop();
+    m_stream->requestPause();
+    m_stream->requestFlush();
 }
 
 void AudioPlayer::useSound(std::vector<float> &t_sound) {
@@ -92,9 +94,8 @@ AudioPlayer::onAudioReady(oboe::AudioStream *audioStream, void *audioData, int32
 }
 
 AudioPlayer::~AudioPlayer() {
-    m_stream->flush();
+    m_stream->stop();
     m_stream->close();
-    m_onClickCallback = []{};
     m_killOnClickCallbackThread = true;
     m_clickCondition.notify_one();
 }
@@ -121,6 +122,8 @@ void AudioPlayer::setInstructions(const std::vector<double>& t_instructions) {
 }
 
 void AudioPlayer::reset() {
+    m_stopCondition.notify_one();
+    m_frameNumber = 0;
     m_stream->stop();
     m_stream->close();
     delete m_stream;
@@ -132,7 +135,8 @@ void AudioPlayer::reset() {
             ->setFormat(oboe::AudioFormat::Float)
             ->setChannelCount(oboe::ChannelCount::Stereo)
             ->setPerformanceMode(oboe::PerformanceMode::LowLatency)
-            ->setSharingMode(oboe::SharingMode::Exclusive);
+            ->setSharingMode(oboe::SharingMode::Exclusive)
+            ->setUsage(oboe::Usage::AssistanceSonification);
 
     oboe::Result result{builder.openStream(&m_stream)};
 

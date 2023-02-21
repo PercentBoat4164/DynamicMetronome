@@ -60,7 +60,7 @@ private:
         }}
         JVMHolder::getInst().vm->DetachCurrentThread();
     }};
-    std::function<void()> m_onStopCallback;
+    std::function<void()> m_onStopCallback{[]{}};
     std::atomic<bool> m_killOnStopCallbackThread{false};
     std::mutex m_stopMutex;
     std::condition_variable m_stopCondition;
@@ -76,4 +76,6 @@ private:
     }};
     std::vector<double> instructions;
     uint64_t m_playHead{};
+
+    void build();
 };
