@@ -1,58 +1,31 @@
 package dynamicmetronome.metronome
 
 import java.io.Serializable
-
-data class Instruction(val startTempo: Double, var tempoOffset: Double, var beats: Long) : Serializable
+import java.util.*
 
 class Program : Serializable {
-    private var instructions: MutableMap<Long, Instruction> = mutableMapOf()
+    private var instructions: SortedMap<Long, Instruction> = sortedMapOf()
     var name = ""
 
     fun addOrChangeInstruction(bar: Long, tempo: Double, interpolation: Boolean) {
+        // The bar cannot be less than 0.
         if (bar < 0) throw NegativeArraySizeException()
+        // Tempo of 0 means delete instruction.
         if (tempo == 0.0) instructions.remove(bar)
-        else {
-            instructions[bar] = Instruction(
-                tempo,
-                if (interpolation) Double.POSITIVE_INFINITY else 0.0,
-                Long.MAX_VALUE
-            )
-        }
+        instructions[bar] = Instruction(tempo, interpolation)
+        if (!instructions.containsKey(0)) instructions[0] = instructions[bar]?.copy()
     }
 
     fun getTempos(): DoubleArray {
-        val result = ArrayList<Double>()
-        val entries = getInstructionsAndBars()
-        for (i in 0 until entries.size) {
-            try {
-                var tempo = entries[i].second.startTempo
-                for (j in 0 until entries[i].second.beats.toInt()) {
-                    result.add(tempo)
-                    tempo += entries[i].second.tempoOffset
-                }
-            } catch (_: IndexOutOfBoundsException) {}
-        }
-        return result.toTypedArray().toDoubleArray()
+        val tempos = DoubleArray(instructions.size)
+        var index = 0
+        for (i in instructions) tempos[index++] = i.value.tempo
+        return tempos
     }
 
-    fun getInstructionsAndBars(): ArrayList<Pair<Long, Instruction>> {
-        // Force Kotlin to perform a deep copy. I hate you Java! Why must you always pass by reference?
-        val temp: MutableMap<Long, Instruction> = HashMap()
-        instructions.forEach{(key, value) -> temp[key] = Instruction(value.startTempo, value.tempoOffset, value.beats)}
-        val entries = ArrayList(temp.toSortedMap().toList())
-        if (entries.size > 0) {  // If instructions exist, build them.
-            if (entries[0].first != 0L) entries.add(0, Pair(0, Instruction(entries[0].second.startTempo, 0.0, 0)))  // 4 as in 4/4 time signature
-            for (entry in 1 until entries.size) {
-                entries[entry - 1].second.beats = (entries[entry].first - entries[entry - 1].first) * 4  // 4 as in 4/4 time signature
-                if (entries[entry].second.tempoOffset != 0.0)
-                    entries[entry - 1].second.tempoOffset = (entries[entry].second.startTempo - entries[entry - 1].second.startTempo) / entries[entry - 1].second.beats
-                if (entries[entry].second.tempoOffset == Double.POSITIVE_INFINITY || entries[entry].second.tempoOffset == Double.NEGATIVE_INFINITY)
-                    entries[entry].second.tempoOffset = 0.0
-            }
-            entries.last().second.beats = 1
-            entries.last().second.tempoOffset = 0.0
-        }
-        return entries
+    // This will include no elements or at least one element that has a key of 0.
+    fun getInstructions(): SortedMap<Long, Instruction> {
+        return instructions
     }
 
     fun clear() {

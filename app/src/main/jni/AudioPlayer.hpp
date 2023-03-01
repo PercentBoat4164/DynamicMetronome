@@ -76,6 +76,7 @@ private:
     }};
     std::vector<double> instructions;
     uint64_t m_playHead{};
+    bool playing;
 
     void build();
 };

@@ -25,8 +25,7 @@ class CreateProgramsActivity : Activity() {
         super.onCreate(savedInstanceState)
 
         editorPopup = DataBindingUtil.setContentView(this, R.layout.editor_popup)
-        createProgramActivity =
-            DataBindingUtil.setContentView(this, R.layout.create_programs_activity)
+        createProgramActivity = DataBindingUtil.setContentView(this, R.layout.create_programs_activity)
 
         // Synchronize with mainMetronome
         if (mainMetronome.playing) {

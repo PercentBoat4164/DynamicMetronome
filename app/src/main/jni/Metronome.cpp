@@ -54,9 +54,6 @@ Java_dynamicmetronome_metronome_Metronome_create(JNIEnv *env, jobject thiz) {
         }
     });
     metronome->player._init();
-
-    metronome->player.setVolume(1.0/3);
-
     // Return a pointer to the metronome for future use.
     return reinterpret_cast<jlong>(metronome);
 }

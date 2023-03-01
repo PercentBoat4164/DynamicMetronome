@@ -32,20 +32,26 @@ AudioPlayer::AudioPlayer() : m_sound(std::vector<float>(1, 1)) {
 }
 
 void AudioPlayer::start() {
-    m_soundTracker = 0;
-    m_playHead = 0;
-    m_nextClick = m_frameNumber;
-    oboe::Result result = m_stream->start();
-    if (result != oboe::Result::OK) {
-        throw std::runtime_error(
-                std::string("Error starting m_stream: ") + oboe::convertToText(result));
+    if (!playing) {
+        playing = true;
+        m_soundTracker = 0;
+        m_playHead = 0;
+        m_nextClick = m_frameNumber;
+        oboe::Result result = m_stream->start();
+        if (result != oboe::Result::OK) {
+            throw std::runtime_error(
+                    std::string("Error starting m_stream: ") + oboe::convertToText(result));
+        }
     }
 }
 
 void AudioPlayer::stop() {
-    m_stopCondition.notify_one();
-    m_stream->requestPause();
-    m_stream->requestFlush();
+    if (playing) {
+        playing = false;
+        m_stopCondition.notify_one();
+        m_stream->requestPause();
+        m_stream->requestFlush();
+    }
 }
 
 void AudioPlayer::useSound(std::vector<float> &t_sound) {
