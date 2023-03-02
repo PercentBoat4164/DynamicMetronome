@@ -17,10 +17,23 @@ class Program : Serializable {
     }
 
     fun getTempos(): DoubleArray {
-        val tempos = DoubleArray(instructions.size)
-        var index = 0
-        for (i in instructions) tempos[index++] = i.value.tempo
-        return tempos
+        val tempos = ArrayList<Double>()
+        for (instruction in instructions.keys.zipWithNext()) {
+            var start = instructions[instruction.first]!!.tempo
+            if (instructions[instruction.second]!!.interpolation) {
+                val end = instructions[instruction.second]!!.tempo
+                val beats = 4.0 * (instruction.second - instruction.first)  // When adding time signatures, this should come from the first instruction
+                val offset = (end - start) / beats
+                for (beat in 1..beats.toInt()) {
+                    tempos.add(start)
+                    start += offset
+                }
+            } else {
+                val beats = 4.0 * (instruction.second - instruction.first)  // When adding time signatures, this should come from the first instruction
+                for (beat in 1..beats.toInt()) tempos.add(start)
+            }
+        }
+        return tempos.toDoubleArray()
     }
 
     // This will include no elements or at least one element that has a key of 0.

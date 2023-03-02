@@ -72,13 +72,11 @@ class CreateProgramsActivity : Activity() {
         }
 
         createProgramActivity.ExecuteProgram.setOnClickListener {
-            if (mainMetronome.getProgram() == null) {
-                mainMetronome.setProgram(program)
-            }
             if (mainMetronome.playing && mainMetronome.getProgram()!!.length() > 0) {
                 mainMetronome.stop()
             } else {
                 createProgramActivity.ExecuteProgram.setImageResource(android.R.drawable.ic_media_pause)
+                mainMetronome.setProgram(program)
                 mainMetronome.start()
             }
         }
