@@ -21,31 +21,35 @@ class ProgramDisplay @JvmOverloads constructor(
     private val beatColor = theme.getColor(R.styleable.ProgramDisplay_beatColor, Color.DKGRAY)
     private val programColor = theme.getColor(R.styleable.ProgramDisplay_programColor, Color.BLUE)
     private val playHeadColor = theme.getColor(R.styleable.ProgramDisplay_playHeadColor, Color.GREEN)
+    private val secondaryTempoColor = theme.getColor(R.styleable.ProgramDisplay_secondaryTempoColor, Color.LTGRAY)
     private val tempoColor = theme.getColor(R.styleable.ProgramDisplay_tempoColor, Color.DKGRAY)
-    private val legendColor = theme.getColor(R.styleable.ProgramDisplay_legendColor, Color.WHITE)
 
     private var beatPaint = Paint()
-
     private var barPaint = Paint()
     private var axisPaint = Paint()
     private var programPaint = Paint()
     private var playHeadPaint = Paint()
+    private var secondaryTempoPaint = Paint()
     private var tempoPaint = Paint()
-    private var legendPaint = Paint()
     private var pointRadius = 20f
 
     private var bars: Array<Long> = arrayOf()
     private var instructions: Map<Long, Instruction> = mapOf()
     private val points = ArrayList<Float>()
+    private val barPoints = ArrayList<Float>()
     private var playHead = 0
+    private var textRectangle = Rect()
 
     private var viewSpaceRect = Rect(0, 0, 100, 100)
     private var programSpaceRect = Rect(0, 200, 4, 0)
 
     init {
         beatPaint.color = beatColor
+        beatPaint.strokeWidth = 2f
+        beatPaint.textSize = 30f
         barPaint.color = barColor
         barPaint.strokeWidth = 2.5f
+        barPaint.textSize = 40f
         axisPaint.color = axisColor
         axisPaint.strokeWidth = 10f
         programPaint.color = programColor
@@ -54,18 +58,98 @@ class ProgramDisplay @JvmOverloads constructor(
         playHeadPaint.color = playHeadColor
         playHeadPaint.strokeWidth = 5f
         tempoPaint.color = tempoColor
-        legendPaint.color = legendColor
-        legendPaint.textSize = 40f
-        legendPaint.isAntiAlias = true
+        tempoPaint.strokeWidth = 2f
+        tempoPaint.textSize = beatPaint.textSize
+        secondaryTempoPaint.color = secondaryTempoColor
+        secondaryTempoPaint.strokeWidth = 2.5f
+        secondaryTempoPaint.textSize = barPaint.textSize
     }
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
-//        instructions = mapOf(Pair(1, Instruction(120.0, true)), Pair(3, Instruction(140.0, false)))
+        autoDetectProgramSpace()
 
-        getViewSpace()
-        getProgramSpace()
+        // Get the max size of the horizontal text
+        initializeViewSpace()
+        val oldBottom = viewSpaceRect.bottom
+        var maxTextHeight = 0  // Height of text in view space
+        for (bar in programSpaceRect.left until  programSpaceRect.right) {
+            val string = (bar+1).toString()
+            barPaint.getTextBounds(string, 0, string.length, textRectangle)
+            viewSpaceRect.bottom = kotlin.math.min(viewSpaceRect.bottom, (oldBottom - textRectangle.width() - axisPaint.strokeWidth).toInt())
+            maxTextHeight = kotlin.math.max(maxTextHeight, textRectangle.width())
+        }
+
+        // Get the max size of the vertical text
+        var maxTextWidth = 0  // Height of text in view space
+        for (tempo in programSpaceRect.bottom until  programSpaceRect.top) {
+            if (tempo % 10 == 0) {
+                val string = tempo.toString()
+                secondaryTempoPaint.getTextBounds(string, 0, string.length, textRectangle)
+                viewSpaceRect.left = kotlin.math.max(viewSpaceRect.left, (textRectangle.width() + axisPaint.strokeWidth).toInt())
+                maxTextWidth = kotlin.math.max(maxTextWidth, textRectangle.width())
+            }
+        }
+
+        // Only use programSpaceToViewSpace() after the the view space has been determined.
+        val beatWidth = programSpaceToViewSpace(1/4.0, 0, false)!!.first - viewSpaceRect.left  // width of beat in view space
+        val tempoHeight = programSpaceToViewSpace(0, 1, false)!!.second - viewSpaceRect.bottom // height of tempo in view space
+
+        // Draw the horizontal legend
+        canvas.rotate(90F)  // After rotating all points must be (y, -x) to become (x, y)
+        for (bar in programSpaceRect.left until programSpaceRect.right) {
+            var location = programSpaceToViewSpace(bar, 0, false)!!.first
+            barPoints.add(viewSpaceRect.top.toFloat())
+            barPoints.add(-location)
+            barPoints.add(viewSpaceRect.bottom.toFloat())
+            barPoints.add(-location)
+            var string = (bar+1).toString()
+            barPaint.getTextBounds(string, 0, string.length, textRectangle)
+            canvas.drawText(string, viewSpaceRect.bottom.toFloat() + axisPaint.strokeWidth / 2, -location + textRectangle.height() / 2, barPaint)
+            if (maxTextHeight > beatWidth) continue
+            for (beat in 1..3) {
+                location = programSpaceToViewSpace(beat / 4.0 + bar, 0, false)!!.first
+                points.add(viewSpaceRect.top.toFloat())
+                points.add(-location)
+                points.add(viewSpaceRect.bottom.toFloat())
+                points.add(-location)
+                string = (beat+1).toString()
+                beatPaint.getTextBounds(string, 0, string.length, textRectangle)
+                canvas.drawText(string, viewSpaceRect.bottom.toFloat() + axisPaint.strokeWidth / 2, -location + textRectangle.height() / 2, beatPaint)
+            }
+        }
+        canvas.drawLines(points.toFloatArray(), beatPaint)
+        canvas.drawLines(barPoints.toFloatArray(), barPaint)
+        points.clear()
+        barPoints.clear()
+        canvas.rotate(-90F)
+
+        // Draw the vertical legend
+        for (tempo in programSpaceRect.bottom until programSpaceRect.top) {
+            val location = programSpaceToViewSpace(0, tempo, false)!!.second
+            val string = tempo.toString()
+            if (tempo % 10 == 0) {
+                barPoints.add(viewSpaceRect.left.toFloat())
+                barPoints.add(location)
+                barPoints.add(viewSpaceRect.right.toFloat())
+                barPoints.add(location)
+                secondaryTempoPaint.getTextBounds(string, 0, string.length, textRectangle)
+                canvas.drawText(string, viewSpaceRect.left - axisPaint.strokeWidth - textRectangle.width(), location + textRectangle.height() / 2, secondaryTempoPaint)
+            } else if (maxTextWidth <= tempoHeight) {
+                points.add(viewSpaceRect.left.toFloat())
+                points.add(location)
+                points.add(viewSpaceRect.right.toFloat())
+                points.add(location)
+                tempoPaint.getTextBounds(string, 0, string.length, textRectangle)
+                canvas.drawText(string, viewSpaceRect.left - axisPaint.strokeWidth - textRectangle.width(), location + textRectangle.height() / 2, tempoPaint)
+            }
+        }
+        canvas.drawLines(points.toFloatArray(), tempoPaint)
+        canvas.drawLines(barPoints.toFloatArray(), secondaryTempoPaint)
+
+        points.clear()
+        barPoints.clear()
 
         // Draw the axes
         canvas.drawLines(floatArrayOf(viewSpaceRect.left.toFloat(), viewSpaceRect.top.toFloat(), viewSpaceRect.left.toFloat(), viewSpaceRect.bottom.toFloat(), viewSpaceRect.left.toFloat(), viewSpaceRect.bottom.toFloat(), viewSpaceRect.right.toFloat(), viewSpaceRect.bottom.toFloat()), axisPaint)
@@ -73,11 +157,8 @@ class ProgramDisplay @JvmOverloads constructor(
 
         // Draw the program
         if (instructions.isEmpty()) return
-
-        points.clear()
-
         for (instruction in instructions.entries) {
-            // For each set of two elements added to the points, consider that one x, y pair.
+            // For each set of two elements added to the points, consider that one y, x pair.
             // For each set of two points added to the points, consider that the end of one line and
             //     the  start of another. The first and last points are removed at the end to make
             //     this work.
@@ -102,17 +183,18 @@ class ProgramDisplay @JvmOverloads constructor(
         points.removeLast()
         points.removeFirst()
         points.removeFirst()
-        canvas.drawLines(points.toTypedArray().toFloatArray(), programPaint)
+        canvas.drawLines(points.toFloatArray(), programPaint)
+        points.clear()
     }
 
-    private fun getViewSpace() {
-        viewSpaceRect.left = (width * .1).toInt()
+    private fun initializeViewSpace() {
+        viewSpaceRect.left = 0
         viewSpaceRect.right = width
         viewSpaceRect.top = 0
-        viewSpaceRect.bottom = height - viewSpaceRect.left
+        viewSpaceRect.bottom = height
     }
 
-    private fun getProgramSpace() {
+    private fun autoDetectProgramSpace() {
         if (instructions.isEmpty()) {
             programSpaceRect.left = 0
             programSpaceRect.right = 1
@@ -133,11 +215,12 @@ class ProgramDisplay @JvmOverloads constructor(
         }
     }
 
-    private fun programSpaceToViewSpace(bar: Long, tempo: Double): Pair<Float, Float>? {
-        // null if outside of the given program space.
-        if (bar < programSpaceRect.left || bar > programSpaceRect.right || tempo < programSpaceRect.bottom || tempo > programSpaceRect.top) return null
+    private fun programSpaceToViewSpace(bar: Number, tempo: Number, bounds: Boolean = true): Pair<Float, Float>? {
+        val barF = bar.toFloat()
+        val tempoF = tempo.toFloat()
+        if (bounds && (barF < programSpaceRect.left || barF > programSpaceRect.right || tempoF < programSpaceRect.bottom || tempoF > programSpaceRect.top)) return null
         // Location in view space = (bar-ps.l)/ps.w*vs.w+vs.l, (tempo-ps.b)/ps.h*vs.h+vs.b
-        return Pair((bar - programSpaceRect.left).toFloat() / programSpaceRect.width() * viewSpaceRect.width() + viewSpaceRect.left, (tempo - programSpaceRect.bottom).toFloat() / programSpaceRect.height() * viewSpaceRect.height() + viewSpaceRect.bottom)
+        return Pair((barF - programSpaceRect.left) / programSpaceRect.width() * viewSpaceRect.width() + viewSpaceRect.left, (tempoF - programSpaceRect.bottom) / programSpaceRect.height() * viewSpaceRect.height() + viewSpaceRect.bottom)
     }
 
     private fun getLegendDrawLevel() {

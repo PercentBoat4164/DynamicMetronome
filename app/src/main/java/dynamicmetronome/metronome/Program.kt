@@ -11,7 +11,7 @@ class Program : Serializable {
         // The bar cannot be less than 0.
         if (bar < 0) throw NegativeArraySizeException()
         // Tempo of 0 means delete instruction.
-        if (tempo == 0.0) instructions.remove(bar)
+        if (tempo == 0.0 && bar != 0L) instructions.remove(bar)
         instructions[bar] = Instruction(tempo, interpolation)
         if (!instructions.containsKey(0)) instructions[0] = instructions[bar]?.copy()
     }

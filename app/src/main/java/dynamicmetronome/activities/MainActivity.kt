@@ -13,7 +13,7 @@ import androidx.databinding.DataBindingUtil
 import dynamicmetronome.activities.databinding.MainActivityBinding
 import dynamicmetronome.metronome.Metronome
 
-/**@todo Find a better way to do this.*/
+/**@todo Find a better way to do this. -> One metronome per activity.*/
 val mainMetronome: Metronome = Metronome()
 
 class MainActivity : AppCompatActivity() {
