@@ -21,8 +21,8 @@ android {
         applicationId "dynamicmetronome.mainactivity"
         minSdk 21
         targetSdkVersion 33
-        versionCode 9
-        versionName "0.2.0"  // Change in AndroidManifest.xml too
+        versionCode 11
+        versionName "0.2.1"  // Change in AndroidManifest.xml too
     }
 
     buildTypes {

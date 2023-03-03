@@ -17,7 +17,9 @@ import java.io.FileInputStream
 import java.io.InvalidClassException
 import java.io.ObjectInputStream
 import kotlin.io.path.Path
+import kotlin.io.path.createDirectory
 import kotlin.io.path.deleteIfExists
+import kotlin.io.path.notExists
 
 class ProgramRecyclerAdapter(
     private val modelList: ArrayList<ProgramListData>,
@@ -41,6 +43,7 @@ class ProgramRecyclerAdapter(
     }
 
     fun build() {
+        if (Path(path).notExists()) Path(path).createDirectory()
         val names = ArrayList<String>()
         for (item in 0 until itemCount) names.add(getItem(item).name)
         val files = File(path).listFiles()?.toCollection(ArrayList())
