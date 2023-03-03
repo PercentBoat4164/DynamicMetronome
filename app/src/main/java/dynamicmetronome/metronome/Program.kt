@@ -12,7 +12,7 @@ class Program : Serializable {
         if (bar < 0) throw NegativeArraySizeException()
         // Tempo of 0 means delete instruction.
         if (tempo == 0.0 && bar != 0L) instructions.remove(bar)
-        instructions[bar] = Instruction(tempo, interpolation)
+        else instructions[bar] = Instruction(tempo, interpolation)
         if (!instructions.containsKey(0)) instructions[0] = instructions[bar]?.copy()
     }
 
@@ -39,14 +39,5 @@ class Program : Serializable {
     // This will include no elements or at least one element that has a key of 0.
     fun getInstructions(): SortedMap<Long, Instruction> {
         return instructions
-    }
-
-    fun clear() {
-        instructions.clear()
-        name = ""
-    }
-
-    fun length(): Int {
-        return instructions.size
     }
 }

@@ -93,8 +93,8 @@ class ProgramDisplay @JvmOverloads constructor(
         }
 
         // Only use programSpaceToViewSpace() after the the view space has been determined.
-        val beatWidth = programSpaceToViewSpace(1/4.0, 0, false)!!.first - viewSpaceRect.left  // width of beat in view space
-        val tempoHeight = programSpaceToViewSpace(0, 1, false)!!.second - viewSpaceRect.bottom // height of tempo in view space
+        val beatWidth = programSpaceToViewSpace(1/4.0, 0, false)!!.first - viewSpaceRect.left  // width of one beat in view space
+        val tempoHeight = programSpaceToViewSpace(0, programSpaceRect.centerY(), false)!!.second - programSpaceToViewSpace(0, programSpaceRect.centerY() + 1, false)!!.second  // height of one tempo in view space
 
         // Draw the horizontal legend
         canvas.rotate(90F)  // After rotating all points must be (y, -x) to become (x, y)
@@ -154,6 +154,10 @@ class ProgramDisplay @JvmOverloads constructor(
         // Draw the axes
         canvas.drawLines(floatArrayOf(viewSpaceRect.left.toFloat(), viewSpaceRect.top.toFloat(), viewSpaceRect.left.toFloat(), viewSpaceRect.bottom.toFloat(), viewSpaceRect.left.toFloat(), viewSpaceRect.bottom.toFloat(), viewSpaceRect.right.toFloat(), viewSpaceRect.bottom.toFloat()), axisPaint)
         canvas.drawCircle(viewSpaceRect.left.toFloat(), viewSpaceRect.bottom.toFloat(), axisPaint.strokeWidth / 2.0F, axisPaint)
+
+        // Draw the playHead
+        val playHead = programSpaceToViewSpace(playHead, programSpaceRect.centerY())?.first
+        if (playHead != null) canvas.drawLine(playHead, viewSpaceRect.top.toFloat(), playHead, viewSpaceRect.bottom.toFloat(), playHeadPaint)
 
         // Draw the program
         if (instructions.isEmpty()) return
@@ -223,13 +227,6 @@ class ProgramDisplay @JvmOverloads constructor(
         return Pair((barF - programSpaceRect.left) / programSpaceRect.width() * viewSpaceRect.width() + viewSpaceRect.left, (tempoF - programSpaceRect.bottom) / programSpaceRect.height() * viewSpaceRect.height() + viewSpaceRect.bottom)
     }
 
-    private fun getLegendDrawLevel() {
-        // Get all text bounds and locations
-        // If any overlap
-          // Restart with one text level down
-        // Return some identifier for a text level to render
-    }
-
     fun setProgram(inputProgram: Program) {
         instructions = inputProgram.getInstructions()
         bars = instructions.keys.toTypedArray()
@@ -238,11 +235,6 @@ class ProgramDisplay @JvmOverloads constructor(
 
     fun resetPlayHead() {
         playHead = 0
-        draw()
-    }
-
-    fun movePlayHead() {
-        ++playHead
         draw()
     }
 

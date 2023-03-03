@@ -2,149 +2,189 @@ package dynamicmetronome.metronome
 
 import android.content.res.AssetFileDescriptor
 import android.media.*
-import java.io.Closeable
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
 
-
-/**
- * Metronome wrapper class
- *
- * Contains a handle to the C++ object data that is used by this class on the C++ side.
- */
-
-class Metronome : Closeable, AudioDeviceCallback() {
+// @todo Split this into a Metronome class and a Sound class
+class Metronome {
     private var program: Program? = null
-    private var onClickCallback: () -> Unit = {}
-    private var onStopCallback: () -> Unit = {}
+    var clickCallback: (Int) -> Unit = {}
+    private var clickCallbackMutex = Mutex()
+    private var clickCallbackThread = Thread {
+        runBlocking { clickCallbackMutex.lock() }
+        clickCallbackMutex.unlock()
+        clickCallback(programPlayHead)
+    }
+    var stopCallback: () -> Unit = {}
+    private var stopCallbackMutex = Mutex()
+    private var stopCallbackThread = Thread {
+        runBlocking { stopCallbackMutex.lock() }
+        stopCallbackMutex.unlock()
+        stopCallback()
+    }
+    private lateinit var sound: FloatArray
+    private val playingMutex = Mutex()
+    private var programPlayHead: Int = 0
+    private var soundPlayHead: Int = 0
+    private var instructions = doubleArrayOf()
 
-    private val handle: Long = create()
+    private var framesToNextClick = 0
+    private var frameNumber = 0
+
     var playing = false
+    var volume = 1f
+    var tempo = 130.0
 
-    override fun onAudioDevicesAdded(addedDevices: Array<out AudioDeviceInfo>?) {
-        super.onAudioDevicesAdded(addedDevices)
-        resetPlayer(handle)
+    init {
+        // Start the callback threads
+        runBlocking { clickCallbackMutex.lock() }
+        clickCallbackThread.start()
+        runBlocking { stopCallbackMutex.lock() }
+        stopCallbackThread.start()
+
+        // @todo When adding sound options, un-hardcode the 48000Hz below.
+        val audioFormat = AudioFormat.Builder().setEncoding(AudioFormat.ENCODING_PCM_FLOAT).setSampleRate(48000).build()
+        val audioTrack = AudioTrack.Builder().setAudioFormat(audioFormat).setBufferSizeInBytes(AudioTrack.getMinBufferSize(48000, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_FLOAT)).build()
+        frameNumber = framesToNextClick + 1
+        audioTrack.play()
+        runBlocking { playingMutex.lock() }
+        val thread = Thread {
+            while (true) {
+                if (instructions.isNotEmpty()) framesToNextClick = (1 / instructions[0] * 48000 * 120).toInt()
+                soundPlayHead = 0
+                programPlayHead = 1
+                frameNumber = 0
+                while (!playingMutex.isLocked) {
+                    val data = FloatArray(DEFAULT_BUFFER_SIZE)
+                    if (instructions.isEmpty()) {
+                        // What happens when playing normally
+                        framesToNextClick = (1 / tempo * 48000 * 120).toInt()
+                        for (frame in 0 until DEFAULT_BUFFER_SIZE) {
+                            if (frameNumber++ >= framesToNextClick) {
+                                // Start the click callback thread
+                                clickCallbackMutex.unlock()
+                                runBlocking { clickCallbackMutex.lock() }
+                                soundPlayHead = 0
+                                frameNumber = 0
+                            }
+                            // @todo When adding sound options, for multi-channel support add a loop over the number of channels here.
+                            if (soundPlayHead < sound.size) data[frame] = sound[soundPlayHead++] * volume * 2
+                        }
+                    } else {
+                        // What happens when playing a program
+                        for (frame in 0 until DEFAULT_BUFFER_SIZE) {
+                            if (frameNumber++ >= framesToNextClick) {
+                                if (programPlayHead >= instructions.size) {
+                                    stop()
+                                    break
+                                }
+                                // Start the click callback thread
+                                clickCallbackMutex.unlock()
+                                runBlocking { clickCallbackMutex.lock() }
+                                framesToNextClick = (1 / instructions[programPlayHead++] * 48000 * 120).toInt()
+                                soundPlayHead = 0
+                                frameNumber = 0
+                            }
+                            // @todo When adding sound options, for multi-channel support add a loop over the number of channels here.
+                            if (soundPlayHead < sound.size) data[frame] = sound[soundPlayHead++] * volume * 2
+                        }
+                    }
+                    audioTrack.write(data, 0, DEFAULT_BUFFER_SIZE, AudioTrack.WRITE_BLOCKING)
+                }
+                if (playingMutex.isLocked) {
+                    runBlocking { playingMutex.lock() }
+                    playingMutex.unlock()
+                }
+            }
+        }
+        thread.priority = Thread.MAX_PRIORITY
+        thread.start()
     }
-
-    override fun onAudioDevicesRemoved(removedDevices: Array<out AudioDeviceInfo>?) {
-        super.onAudioDevicesRemoved(removedDevices)
-        resetPlayer(handle)
-    }
-
-    // Destructor
-    override fun close() = destroy(handle)
 
     fun start() {
-        playing = true
-        start(handle)
+        if (!playing) {
+            playing = true
+            if (playingMutex.isLocked) playingMutex.unlock()
+        }
     }
 
     fun stop() {
-        playing = false
-        stop(handle)
+        if (playing) {
+            playing = false
+            stopCallback()
+            runBlocking { playingMutex.lock() }
+        }
     }
 
     fun useSound(stream: AssetFileDescriptor) {
-        // Run this in a separate thread to avoid issues with high application loading times.
-        Thread {
-            // Get file contents
-            val extractor = MediaExtractor()
-            extractor.setDataSource(stream.fileDescriptor, stream.startOffset, stream.length)
-            extractor.selectTrack(0)
+        // Get file contents
+        val extractor = MediaExtractor()
+        extractor.setDataSource(stream.fileDescriptor, stream.startOffset, stream.length)
+        extractor.selectTrack(0)
 
-            val decoder = MediaCodec.createByCodecName(
-                MediaCodecList(MediaCodecList.REGULAR_CODECS)
-                    .findDecoderForFormat(extractor.getTrackFormat(0))
-            )
-            decoder.configure(extractor.getTrackFormat(0), null, null, 0)
-            decoder.start()
-            val outputBuffers = ArrayList<ByteArray>()
-            val info = MediaCodec.BufferInfo()
-            var isEOS = false
-            while (!isEOS) {
-                val inIndex = decoder.dequeueInputBuffer(10000)
-                if (inIndex >= 0) {
-                    val buffer = decoder.getInputBuffer(inIndex)!!
-                    val sampleSize = extractor.readSampleData(buffer, 0)
-                    if (sampleSize < 0) {
-                        decoder.queueInputBuffer(
-                            inIndex,
-                            0,
-                            0,
-                            0,
-                            MediaCodec.BUFFER_FLAG_END_OF_STREAM)
-                        isEOS = true
-                    } else {
-                        decoder.queueInputBuffer(
-                            inIndex,
-                            0,
-                            sampleSize,
-                            extractor.sampleTime,
-                            0)
-                        extractor.advance()
-                    }
-                }
-                val outIndex = decoder.dequeueOutputBuffer(info, 10000)
-                if (outIndex != MediaCodec.INFO_OUTPUT_FORMAT_CHANGED
-                  && outIndex != MediaCodec.INFO_TRY_AGAIN_LATER) {
-                    val outBuffer = decoder.getOutputBuffer(outIndex)
-                    outputBuffers.add(ByteArray(info.size))
-                    outBuffer?.get(outputBuffers[outputBuffers.size - 1])
-                    outBuffer?.clear()
-                    decoder.releaseOutputBuffer(outIndex, false)
+        val decoder = MediaCodec.createByCodecName(
+            MediaCodecList(MediaCodecList.REGULAR_CODECS)
+                .findDecoderForFormat(extractor.getTrackFormat(0))
+        )
+        decoder.configure(extractor.getTrackFormat(0), null, null, 0)
+        decoder.start()
+        val outputBuffers = ArrayList<ByteArray>()
+        val info = MediaCodec.BufferInfo()
+        var isEOS = false
+        while (!isEOS) {
+            val inIndex = decoder.dequeueInputBuffer(10000)
+            if (inIndex >= 0) {
+                val buffer = decoder.getInputBuffer(inIndex)!!
+                val sampleSize = extractor.readSampleData(buffer, 0)
+                if (sampleSize < 0) {
+                    decoder.queueInputBuffer(
+                        inIndex,
+                        0,
+                        0,
+                        0,
+                        MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+                    isEOS = true
+                } else {
+                    decoder.queueInputBuffer(
+                        inIndex,
+                        0,
+                        sampleSize,
+                        extractor.sampleTime,
+                        0)
+                    extractor.advance()
                 }
             }
-            val format = decoder.outputFormat
-            decoder.stop()
-            decoder.release()
-            extractor.release()
+            val outIndex = decoder.dequeueOutputBuffer(info, 10000)
+            if (outIndex != MediaCodec.INFO_OUTPUT_FORMAT_CHANGED
+              && outIndex != MediaCodec.INFO_TRY_AGAIN_LATER) {
+                val outBuffer = decoder.getOutputBuffer(outIndex)
+                outputBuffers.add(ByteArray(info.size))
+                outBuffer?.get(outputBuffers[outputBuffers.size - 1])
+                outBuffer?.clear()
+                decoder.releaseOutputBuffer(outIndex, false)
+            }
+        }
+        val format = decoder.outputFormat
+        decoder.stop()
+        decoder.release()
+        extractor.release()
 
-            // Merge arraylists
-            var size = 0
-            for (outputBuffer in outputBuffers) size += outputBuffer.size
-            val channels = format.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
-            val buffer = ByteArray(size / channels)
-            size = 0
-            for (outputBuffer in outputBuffers) for (i in 0 until outputBuffer.size / channels)
-                buffer[size++] = outputBuffer[i * channels]
-            val floats = FloatArray(buffer.size / 2)
-            // Convert MediaCodec output to float samples
-            for (i in 0 until buffer.size / 2) floats[i] =
-                (buffer[i * 2 + 1].toInt().shl(8) + buffer[i * 2].toInt()).toFloat() / 65535
-            useSound(handle, floats)
-        }.start()
+        // Merge arraylists
+        var size = 0
+        for (outputBuffer in outputBuffers) size += outputBuffer.size
+        val channels = format.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
+        val buffer = ByteArray(size / channels)
+        size = 0
+        for (outputBuffer in outputBuffers) for (i in 0 until outputBuffer.size / channels) buffer[size++] = outputBuffer[i * channels]
+        sound = FloatArray(buffer.size / 2)
+        // Convert MediaCodec output to float samples
+        for (i in 0 until buffer.size / 2) sound[i] = (buffer[i * 2 + 1].toInt().shl(8) + buffer[i * 2].toInt()).toFloat() / 65535
     }
 
     fun getProgram(): Program? = program
 
     fun setProgram(program: Program?) {
         this.program = program
-        setProgram(handle, program?.getTempos() ?: doubleArrayOf())
+        instructions = program?.getTempos() ?: doubleArrayOf()
     }
-
-    fun setTempo(tempo: Double) = setTempo(handle, tempo)
-    fun setVolume(volume: Float) = setVolume(handle, volume)
-
-
-    fun setOnClickCallback(function: () -> Unit) {
-        onClickCallback = function
-    }
-    fun setOnStopCallback(function: () -> Unit) {
-        onStopCallback = function
-    }
-
-    private fun clickCallback() = onClickCallback()
-    private fun stopCallback() {
-        stop()
-        onStopCallback()
-    }
-
-    private external fun create(): Long
-    private external fun resetPlayer(handle: Long)
-    private external fun destroy(handle: Long)
-    private external fun start(handle: Long)
-    private external fun stop(handle: Long)
-    private external fun useSound(handle: Long, bytes: FloatArray)
-    private external fun setProgram(handle: Long, instructions: DoubleArray)
-    private external fun clearProgram(handle: Long)
-    private external fun setTempo(handle: Long, tempo: Double)
-    private external fun setVolume(handle: Long, volume: Float)
 }

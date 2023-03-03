@@ -25,11 +25,6 @@ android {
         targetSdkVersion 33
         versionCode 6
         versionName "0.1.2"
-        externalNativeBuild {
-            cmake {
-                cppFlags '-std=c++23'
-            }
-        }
     }
 
     buildTypes {
@@ -54,13 +49,6 @@ android {
         jvmTarget = "1.8"
     }
 
-    externalNativeBuild {
-        cmake {
-            path file('src/main/jni/CMakeLists.txt')
-            version '3.22.1'
-        }
-    }
-
     buildFeatures {
         viewBinding true
     }
@@ -69,18 +57,18 @@ android {
         includeInApk false
         includeInBundle false
     }
-    ndkVersion '25.2.9519653'
+
     buildToolsVersion '33.0.1'
     namespace 'dynamicmetronome.activities'
 }
 
 dependencies {
     implementation 'androidx.core:core-ktx:1.9.0'
-    implementation 'androidx.appcompat:appcompat:1.6.0'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.8.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2'
-    implementation 'com.google.firebase:firebase-crashlytics:18.3.3'
+    implementation 'com.google.firebase:firebase-crashlytics:18.3.5'
     implementation 'com.google.firebase:firebase-analytics:21.2.0'
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
