@@ -112,23 +112,6 @@ class CreateProgramsActivity : Activity() {
         createProgramActivity.ProgramDisplay.resetPlayHead()
     }
 
-//    override fun onResume() {
-//        super.onResume()
-//
-//        // Synchronize with mainMetronome
-//        if (mainMetronome.playing) stopWhenExit = false
-//        createProgramActivity.ExecuteProgram.setImageResource(android.R.drawable.ic_media_pause)
-//        mainMetronome.stopCallback = {
-//            stopWhenExit = true
-//            createProgramActivity.ExecuteProgram.setImageResource(android.R.drawable.ic_media_play)
-//            createProgramActivity.ProgramDisplay.resetPlayHead()
-//        }
-//        if (mainMetronome.getProgram() != null) program = mainMetronome.getProgram()!!
-//        mainMetronome.clickCallback = { playHead: Float -> createProgramActivity.ProgramDisplay.setPlayHead(playHead) }
-//        val programName = program.name
-//        if (programName.isNotEmpty()) createProgramActivity.ProgramName.setText(programName)
-//    }
-
     private fun exit() {
         if (stopWhenExit) {
             mainMetronome.stop()

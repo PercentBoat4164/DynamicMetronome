@@ -12,6 +12,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import dynamicmetronome.activities.R
 import dynamicmetronome.activities.mainMetronome
 import dynamicmetronome.metronome.Program
+import java.io.File
 import java.io.FileInputStream
 import java.io.InvalidClassException
 import java.io.ObjectInputStream
@@ -33,6 +34,28 @@ class ProgramRecyclerAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.program_entry, parent, false)
         return ViewHolder(view, applicationContext)
+    }
+
+    private fun getItem(position: Int): ProgramListData {
+        return modelList[position]
+    }
+
+    fun build() {
+        val names = ArrayList<String>()
+        for (item in 0 until itemCount) names.add(getItem(item).name)
+        val files = File(path).listFiles()?.toCollection(ArrayList())
+        for (file in files!!) {
+            val name = names.find { it == file.nameWithoutExtension }
+            if (name == null) {
+                modelList.add(ProgramListData(file.nameWithoutExtension))
+                notifyItemInserted(modelList.size)
+            } else names.remove(file.nameWithoutExtension)
+        }
+        for (name in names) {
+            val index = modelList.indexOf(ProgramListData(name))
+            modelList.removeAt(index)
+            notifyItemRemoved(index)
+        }
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
