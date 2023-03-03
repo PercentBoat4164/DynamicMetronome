@@ -39,8 +39,8 @@ class ListProgramsActivity : Activity() {
         callback = mainMetronome.stopCallback
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
+    override fun onActivityReenter(resultCode: Int, data: Intent?) {
+        super.onActivityReenter(resultCode, data)
         buildRecycler()
     }
 
