@@ -37,7 +37,7 @@ class ProgramDisplay @JvmOverloads constructor(
     private var instructions: Map<Long, Instruction> = mapOf()
     private val points = ArrayList<Float>()
     private val barPoints = ArrayList<Float>()
-    private var playHead = 0
+    private var playHead = 0f
     private var textRectangle = Rect()
 
     private var viewSpaceRect = Rect(0, 0, 100, 100)
@@ -234,11 +234,11 @@ class ProgramDisplay @JvmOverloads constructor(
     }
 
     fun resetPlayHead() {
-        playHead = 0
+        playHead = 0f
         draw()
     }
 
-    fun setPlayHead(position: Int) {
+    fun setPlayHead(position: Float) {
         playHead = position
         draw()
     }

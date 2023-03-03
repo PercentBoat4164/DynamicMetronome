@@ -4,28 +4,25 @@ import android.content.res.AssetFileDescriptor
 import android.media.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
+import java.util.concurrent.Semaphore
 
 // @todo Split this into a Metronome class and a Sound class
 class Metronome {
     private var program: Program? = null
-    var clickCallback: (Int) -> Unit = {}
-    private var clickCallbackMutex = Mutex()
+    var clickCallback: (Float) -> Unit = {}
+    private var clickSemaphore = Semaphore(0)
     private var clickCallbackThread = Thread {
-        runBlocking { clickCallbackMutex.lock() }
-        clickCallbackMutex.unlock()
-        clickCallback(programPlayHead)
+        while (true) {
+            clickSemaphore.acquire()
+            clickCallback(viewPlayHead)
+        }
     }
     var stopCallback: () -> Unit = {}
-    private var stopCallbackMutex = Mutex()
-    private var stopCallbackThread = Thread {
-        runBlocking { stopCallbackMutex.lock() }
-        stopCallbackMutex.unlock()
-        stopCallback()
-    }
     private lateinit var sound: FloatArray
     private val playingMutex = Mutex()
-    private var programPlayHead: Int = 0
-    private var soundPlayHead: Int = 0
+    private var programPlayHead = 0
+    private var viewPlayHead = 0f
+    private var soundPlayHead = 0
     private var instructions = doubleArrayOf()
 
     private var framesToNextClick = 0
@@ -36,11 +33,7 @@ class Metronome {
     var tempo = 130.0
 
     init {
-        // Start the callback threads
-        runBlocking { clickCallbackMutex.lock() }
         clickCallbackThread.start()
-        runBlocking { stopCallbackMutex.lock() }
-        stopCallbackThread.start()
 
         // @todo When adding sound options, un-hardcode the 48000Hz below.
         val audioFormat = AudioFormat.Builder().setEncoding(AudioFormat.ENCODING_PCM_FLOAT).setSampleRate(48000).build()
@@ -52,8 +45,9 @@ class Metronome {
             while (true) {
                 if (instructions.isNotEmpty()) framesToNextClick = (1 / instructions[0] * 48000 * 120).toInt()
                 soundPlayHead = 0
-                programPlayHead = 1
+                programPlayHead = 0
                 frameNumber = 0
+                viewPlayHead = 0f
                 while (!playingMutex.isLocked) {
                     val data = FloatArray(DEFAULT_BUFFER_SIZE)
                     if (instructions.isEmpty()) {
@@ -62,8 +56,7 @@ class Metronome {
                         for (frame in 0 until DEFAULT_BUFFER_SIZE) {
                             if (frameNumber++ >= framesToNextClick) {
                                 // Start the click callback thread
-                                clickCallbackMutex.unlock()
-                                runBlocking { clickCallbackMutex.lock() }
+                                clickSemaphore.release()
                                 soundPlayHead = 0
                                 frameNumber = 0
                             }
@@ -79,11 +72,11 @@ class Metronome {
                                     break
                                 }
                                 // Start the click callback thread
-                                clickCallbackMutex.unlock()
-                                runBlocking { clickCallbackMutex.lock() }
+                                clickSemaphore.release()
                                 framesToNextClick = (1 / instructions[programPlayHead++] * 48000 * 120).toInt()
                                 soundPlayHead = 0
                                 frameNumber = 0
+                                viewPlayHead += 1/4f
                             }
                             // @todo When adding sound options, for multi-channel support add a loop over the number of channels here.
                             if (soundPlayHead < sound.size) data[frame] = sound[soundPlayHead++] * volume * 2

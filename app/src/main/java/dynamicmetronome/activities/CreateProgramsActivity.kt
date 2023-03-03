@@ -53,7 +53,7 @@ class CreateProgramsActivity : Activity() {
             }
         }
         if (mainMetronome.getProgram() != null) program = mainMetronome.getProgram()!!
-        mainMetronome.clickCallback = { playHead: Int -> createProgramActivity.ProgramDisplay.setPlayHead(playHead) }
+        mainMetronome.clickCallback = { playHead: Float -> createProgramActivity.ProgramDisplay.setPlayHead(playHead) }
         val programName = program.name
         if (programName.isNotEmpty()) createProgramActivity.ProgramName.setText(programName)
 
@@ -150,7 +150,7 @@ class CreateProgramsActivity : Activity() {
             }
         }
         if (mainMetronome.getProgram() != null) program = mainMetronome.getProgram()!!
-        mainMetronome.clickCallback = { playHead: Int -> createProgramActivity.ProgramDisplay.setPlayHead(playHead) }
+        mainMetronome.clickCallback = { playHead: Float -> createProgramActivity.ProgramDisplay.setPlayHead(playHead) }
         val programName = program.name
         if (programName.isNotEmpty()) createProgramActivity.ProgramName.setText(programName)
     }
