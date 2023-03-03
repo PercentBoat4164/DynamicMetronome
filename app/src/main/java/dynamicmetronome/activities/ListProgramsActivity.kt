@@ -15,6 +15,7 @@ import kotlin.io.path.notExists
 
 class ListProgramsActivity : Activity() {
     private lateinit var programsActivity: ListProgramsActivityBinding
+    private var callback:() -> Unit = {}
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,9 +34,19 @@ class ListProgramsActivity : Activity() {
         buildRecycler()
     }
 
+    override fun onPause() {
+        super.onPause()
+        callback = mainMetronome.stopCallback
+    }
+
     override fun onActivityReenter(resultCode: Int, data: Intent?) {
         super.onActivityReenter(resultCode, data)
         buildRecycler()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        mainMetronome.stopCallback = callback
     }
 
     private fun buildRecycler() {

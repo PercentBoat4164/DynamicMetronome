@@ -57,7 +57,9 @@ class ProgramRecyclerAdapter(
             val name = holder.nameView.text.toString()
             if (mainMetronome.getProgram()?.name != name) {
                 try {
-                    mainMetronome.setProgram(ObjectInputStream(FileInputStream("$path/$name.met")).readObject() as Program)
+                    val program = ObjectInputStream(FileInputStream("$path/$name.met")).readObject() as Program
+                    program.name = name
+                    mainMetronome.setProgram(program)
                 } catch (e: InvalidClassException) {
                     Toast.makeText(holder.applicationContext, "This program is incompatible with this version of Dynamic Metronome.", Toast.LENGTH_LONG).show()
                     return@setOnClickListener
