@@ -1,7 +1,6 @@
 package dynamicmetronome.activities
 
 import android.app.Activity
-import android.content.Intent
 import android.content.res.Resources
 import android.os.Bundle
 import android.view.Gravity
@@ -26,31 +25,19 @@ class CreateProgramsActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        stopWhenExit = mainMetronome.playing
-
         editorPopup = DataBindingUtil.setContentView(this, R.layout.editor_popup)
         createProgramActivity = DataBindingUtil.setContentView(this, R.layout.create_programs_activity)
 
         // Synchronize with mainMetronome
-        if (mainMetronome.playing) {
-            stopWhenExit = false
-            createProgramActivity.ExecuteProgram.setImageResource(android.R.drawable.ic_media_pause)
-            val callback = mainMetronome.stopCallback
-            mainMetronome.stopCallback = {
-                mainMetronome.stopCallback = {
-                    createProgramActivity.ExecuteProgram.setImageResource(android.R.drawable.ic_media_play)
-                    createProgramActivity.ProgramDisplay.resetPlayHead()
-                }
-                callback()
-                stopWhenExit = true
-                createProgramActivity.ExecuteProgram.setImageResource(android.R.drawable.ic_media_play)
-                createProgramActivity.ProgramDisplay.resetPlayHead()
-            }
-        } else {
-            mainMetronome.stopCallback = {
-                createProgramActivity.ExecuteProgram.setImageResource(android.R.drawable.ic_media_play)
-                createProgramActivity.ProgramDisplay.resetPlayHead()
-            }
+        if (mainMetronome.playing) stopWhenExit = false
+        createProgramActivity.ExecuteProgram.setImageResource(android.R.drawable.ic_media_pause)
+        var callback = mainMetronome.stopCallback
+        mainMetronome.stopCallback = {
+            callback()
+            callback = {}
+            stopWhenExit = true
+            createProgramActivity.ExecuteProgram.setImageResource(android.R.drawable.ic_media_play)
+            createProgramActivity.ProgramDisplay.resetPlayHead()
         }
         if (mainMetronome.getProgram() != null) program = mainMetronome.getProgram()!!
         mainMetronome.clickCallback = { playHead: Float -> createProgramActivity.ProgramDisplay.setPlayHead(playHead) }
@@ -125,39 +112,28 @@ class CreateProgramsActivity : Activity() {
         createProgramActivity.ProgramDisplay.resetPlayHead()
     }
 
-    override fun onActivityReenter(resultCode: Int, data: Intent?) {
-        super.onActivityReenter(resultCode, data)
-
-        // Synchronize with mainMetronome
-        if (mainMetronome.playing) {
-            stopWhenExit = false
-            createProgramActivity.ExecuteProgram.setImageResource(android.R.drawable.ic_media_pause)
-            val callback = mainMetronome.stopCallback
-            mainMetronome.stopCallback = {
-                mainMetronome.stopCallback = {
-                    createProgramActivity.ExecuteProgram.setImageResource(android.R.drawable.ic_media_play)
-                    createProgramActivity.ProgramDisplay.resetPlayHead()
-                }
-                callback()
-                stopWhenExit = true
-                createProgramActivity.ExecuteProgram.setImageResource(android.R.drawable.ic_media_play)
-                createProgramActivity.ProgramDisplay.resetPlayHead()
-            }
-        } else {
-            mainMetronome.stopCallback = {
-                createProgramActivity.ExecuteProgram.setImageResource(android.R.drawable.ic_media_play)
-                createProgramActivity.ProgramDisplay.resetPlayHead()
-            }
-        }
-        if (mainMetronome.getProgram() != null) program = mainMetronome.getProgram()!!
-        mainMetronome.clickCallback = { playHead: Float -> createProgramActivity.ProgramDisplay.setPlayHead(playHead) }
-        val programName = program.name
-        if (programName.isNotEmpty()) createProgramActivity.ProgramName.setText(programName)
-    }
+//    override fun onResume() {
+//        super.onResume()
+//
+//        // Synchronize with mainMetronome
+//        if (mainMetronome.playing) stopWhenExit = false
+//        createProgramActivity.ExecuteProgram.setImageResource(android.R.drawable.ic_media_pause)
+//        mainMetronome.stopCallback = {
+//            stopWhenExit = true
+//            createProgramActivity.ExecuteProgram.setImageResource(android.R.drawable.ic_media_play)
+//            createProgramActivity.ProgramDisplay.resetPlayHead()
+//        }
+//        if (mainMetronome.getProgram() != null) program = mainMetronome.getProgram()!!
+//        mainMetronome.clickCallback = { playHead: Float -> createProgramActivity.ProgramDisplay.setPlayHead(playHead) }
+//        val programName = program.name
+//        if (programName.isNotEmpty()) createProgramActivity.ProgramName.setText(programName)
+//    }
 
     private fun exit() {
-        mainMetronome.setProgram(null)
-        if (stopWhenExit) mainMetronome.stop()
+        if (stopWhenExit) {
+            mainMetronome.stop()
+            mainMetronome.setProgram(null)
+        }
         editorPopup.BarNumberInputField.setText("")
         editorPopup.TempoInputField.setText("")
         finish()

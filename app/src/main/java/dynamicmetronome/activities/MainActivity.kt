@@ -47,7 +47,7 @@ class MainActivity : AppCompatActivity() {
             if (!isChecked)
                 mainMetronome.volume = 0.0F
             else
-                mainMetronome.volume = (mainActivity.QuarterVolume.progress / 100.0F)
+                mainMetronome.volume = (mainActivity.QuarterVolume.progress / 100f)
         }
 
         mainActivity.StartStopButton.setOnClickListener {
@@ -62,7 +62,7 @@ class MainActivity : AppCompatActivity() {
         mainActivity.QuarterVolume.setOnSeekBarChangeListener(object :
             SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
-                if (mainActivity.QuarterPlaying.isChecked) mainMetronome.volume = progress / 100.0F
+                if (mainActivity.QuarterPlaying.isChecked) mainMetronome.volume = progress / 100f
             }
 
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
@@ -74,7 +74,7 @@ class MainActivity : AppCompatActivity() {
             SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 if (fromUser) {
-                    val tempo = progress * (MAX_TEMPO - MIN_TEMPO) / 100F + MIN_TEMPO
+                    val tempo = progress * (MAX_TEMPO - MIN_TEMPO) / 100f + MIN_TEMPO
                     mainMetronome.tempo = tempo
                     mainActivity.TempoNumberPicker.value = tempo.toInt()
                 }
@@ -91,9 +91,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    override fun onActivityReenter(resultCode: Int, data: Intent?) {
-        super.onActivityReenter(resultCode, data)
+    override fun onResume() {
+        super.onResume()
         mainMetronome.stopCallback = { mainActivity.StartStopButton.setImageResource(android.R.drawable.ic_media_play); }
+        mainMetronome.setProgram(null)
     }
 
     companion object {

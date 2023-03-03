@@ -21,10 +21,10 @@ android {
 
     defaultConfig {
         applicationId "dynamicmetronome.mainactivity"
-        minSdk 23
+        minSdk 21
         targetSdkVersion 33
-        versionCode 6
-        versionName "0.1.2"
+        versionCode 8
+        versionName "0.2.0"  // Change in AndroidManifest.xml too
     }
 
     buildTypes {
