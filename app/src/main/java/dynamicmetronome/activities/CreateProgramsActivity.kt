@@ -28,22 +28,6 @@ class CreateProgramsActivity : Activity() {
         editorPopup = DataBindingUtil.setContentView(this, R.layout.editor_popup)
         createProgramActivity = DataBindingUtil.setContentView(this, R.layout.create_programs_activity)
 
-        // Synchronize with mainMetronome
-        if (mainMetronome.playing) stopWhenExit = false
-        createProgramActivity.ExecuteProgram.setImageResource(android.R.drawable.ic_media_pause)
-        var callback = mainMetronome.stopCallback
-        mainMetronome.stopCallback = {
-            callback()
-            callback = {}
-            stopWhenExit = true
-            createProgramActivity.ExecuteProgram.setImageResource(android.R.drawable.ic_media_play)
-            createProgramActivity.ProgramDisplay.resetPlayHead()
-        }
-        if (mainMetronome.getProgram() != null) program = mainMetronome.getProgram()!!
-        mainMetronome.clickCallback = { playHead: Float -> createProgramActivity.ProgramDisplay.setPlayHead(playHead) }
-        val programName = program.name
-        if (programName.isNotEmpty()) createProgramActivity.ProgramName.setText(programName)
-
         // Set up the new element button's actions
         createProgramActivity.NewElementButton.setOnClickListener {
             createProgramActivity.ProgramName.clearFocus()
@@ -110,6 +94,27 @@ class CreateProgramsActivity : Activity() {
         }
         createProgramActivity.ProgramDisplay.setProgram(program)
         createProgramActivity.ProgramDisplay.resetPlayHead()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Synchronize with mainMetronome
+        if (mainMetronome.playing) {
+            stopWhenExit = false
+            createProgramActivity.ExecuteProgram.setImageResource(android.R.drawable.ic_media_pause)
+        }
+        var callback = mainMetronome.stopCallback
+        mainMetronome.stopCallback = {
+            callback()
+            callback = {}
+            stopWhenExit = true
+            createProgramActivity.ExecuteProgram.setImageResource(android.R.drawable.ic_media_play)
+            createProgramActivity.ProgramDisplay.resetPlayHead()
+        }
+        if (mainMetronome.getProgram() != null) program = mainMetronome.getProgram()!!
+        mainMetronome.clickCallback = { playHead: Float -> createProgramActivity.ProgramDisplay.setPlayHead(playHead) }
+        val programName = program.name
+        if (programName.isNotEmpty()) createProgramActivity.ProgramName.setText(programName)
     }
 
     private fun exit() {
